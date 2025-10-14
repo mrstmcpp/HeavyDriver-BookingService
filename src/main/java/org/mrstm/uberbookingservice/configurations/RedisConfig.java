@@ -25,7 +25,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, String> bookingRedisTemplate(RedisConnectionFactory factory) {
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
@@ -33,14 +33,14 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean
-    public RedisTemplate<String, Object> justForFutureUse(RedisConnectionFactory factory) {
-        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(factory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(serializer);
-        return template;
-    }
+//    @Bean
+//    public RedisTemplate<String, Object> justForFutureUse(RedisConnectionFactory factory) {
+//        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(Object.class);
+//        RedisTemplate<String, Object> template = new RedisTemplate<>();
+//        template.setConnectionFactory(factory);
+//        template.setKeySerializer(new StringRedisSerializer());
+//        template.setValueSerializer(serializer);
+//        return template;
+//    }
 
 }

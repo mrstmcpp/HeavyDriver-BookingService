@@ -64,7 +64,6 @@ public class BookingServiceImpl implements BookingService {
                     .build();
 
             Booking newBooking = bookingRepository.save(booking);
-            passengerRepository.setActiveBooking(p.getId() , newBooking);
             //changing to kafka
             processNearbyDriverAsync(req , bookingDetails.getPassengerId() , newBooking.getId());
 
@@ -104,7 +103,7 @@ public class BookingServiceImpl implements BookingService {
                     .orElseThrow(() -> new NotFoundException("Booking not found with ID: " + bookingId));
 
             bookingRepository.updateBookingStatusAndDriverById(bookingId, BookingStatus.SCHEDULED, driver);
-
+            passengerRepository.setActiveBooking(Long.parseLong(bookingDetails.getPassengerId()) , booking);
             redisService.setDriverBookingPair(bookingDetails.getDriverId() , bookingDetails.getBookingId()); //storing in cachee
 
             OTP otp = OTP.make(booking);

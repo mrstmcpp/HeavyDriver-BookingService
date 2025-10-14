@@ -7,12 +7,12 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisServiceImpl implements RedisService{
-    private final RedisTemplate<String , String> redisTemplate;
-    private final RedisService redisService;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public RedisServiceImpl(RedisTemplate<String, String> redisTemplate, RedisService redisService) {
+
+    public RedisServiceImpl(RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
-        this.redisService = redisService;
+
     }
 
     @Override

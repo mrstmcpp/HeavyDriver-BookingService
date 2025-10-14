@@ -16,17 +16,15 @@ import org.springframework.stereotype.Service;
 public class ConfirmedBookingEventConsumer {
     private final KafkaService kafkaService;
     private final BookingService bookingService;
+
     public ConfirmedBookingEventConsumer(KafkaService kafkaService, BookingService bookingService) {
         this.kafkaService = kafkaService;
         this.bookingService = bookingService;
     }
 
-    @KafkaListener(topicPartitions = @TopicPartition(
-            topic = KafkaTopics.BOOKING_CONFIRMED,
-            partitions = {"2"}   // <-- fixed partitions for this consumer
-    ), groupId = "booking-group")
-    public void listenConfirmedBookingAndUpdateBooking(RideResponseByDriver rideResponseByDriver){
-        try{
+    @KafkaListener(topics = KafkaTopics.BOOKING_CONFIRMED, groupId = "booking-group")
+    public void listenConfirmedBookingAndUpdateBooking(RideResponseByDriver rideResponseByDriver) {
+        try {
             System.out.println("Confirmed booking msg received" + rideResponseByDriver.getBookingId());
             UpdateBookingRequestDto updateRequest = UpdateBookingRequestDto.builder()
                     .bookingId(rideResponseByDriver.getBookingId())
@@ -34,7 +32,7 @@ public class ConfirmedBookingEventConsumer {
                     .passengerId(rideResponseByDriver.getPassengerId())
                     .bookingStatus(BookingStatus.SCHEDULED)
                     .build();
-            bookingService.updateBooking(updateRequest , Long.parseLong(rideResponseByDriver.getBookingId()));
+            bookingService.updateBooking(updateRequest, Long.parseLong(rideResponseByDriver.getBookingId()));
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
