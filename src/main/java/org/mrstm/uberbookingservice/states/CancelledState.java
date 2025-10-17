@@ -1,6 +1,5 @@
 package org.mrstm.uberbookingservice.states;
 
-import org.mrstm.uberbookingservice.dto.CompleteBookingRequestDto;
 import org.mrstm.uberbookingservice.dto.UpdateBookingRequestDto;
 import org.mrstm.uberentityservice.models.BookingStatus;
 

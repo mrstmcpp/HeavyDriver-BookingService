@@ -2,8 +2,6 @@ package org.mrstm.uberbookingservice.services;
 
 
 import org.mrstm.uberbookingservice.dto.*;
-import org.mrstm.uberentityservice.models.Booking;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,6 +18,10 @@ public interface BookingService {
 
     public Long getActiveBooking(Long passengerId);
 
+    public Long getActiveBookingOfDriver(Long driverId);
+
     public UpdateBookingResponseDto updateStatus(UpdateBookingRequestDto bookingRequestDto);
+
+
 
 }

@@ -1,8 +1,8 @@
 package org.mrstm.uberbookingservice.services;
 
 
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
-import org.mrstm.uberbookingservice.apis.LocationServiceApi;
 import org.mrstm.uberbookingservice.apis.SocketApi;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.models.Location;
@@ -14,7 +14,6 @@ import org.mrstm.uberbookingservice.states.*;
 import org.mrstm.uberentityservice.dto.booking.BookingCreatedEvent;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -58,6 +57,8 @@ public class BookingServiceImpl implements BookingService {
                     .endLocation(bookingDetails.getEndLocation())
                     .passenger(p)
                     .build();
+            System.out.println("here");
+
             NearbyDriversRequestDto req = NearbyDriversRequestDto.builder()
                     .dropLocation(bookingDetails.getEndLocation())
                     .pickupLocation(bookingDetails.getStartLocation())
@@ -92,6 +93,7 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Override
+    @Transactional
     public UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto bookingDetails, Long bookingId) {
         try {
             Driver driver = driverRepository.findById(Long.parseLong(bookingDetails.getDriverId()))
@@ -103,6 +105,7 @@ public class BookingServiceImpl implements BookingService {
                     .orElseThrow(() -> new NotFoundException("Booking not found with ID: " + bookingId));
 
             bookingRepository.updateBookingStatusAndDriverById(bookingId, BookingStatus.SCHEDULED, driver);
+            driver.setActiveBooking(booking);
             passengerRepository.setActiveBooking(Long.parseLong(bookingDetails.getPassengerId()) , booking);
             redisService.setDriverBookingPair(bookingDetails.getDriverId() , bookingDetails.getBookingId()); //storing in cachee
 
@@ -247,6 +250,14 @@ public class BookingServiceImpl implements BookingService {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public Long getActiveBookingOfDriver(Long driverId) {
+        Long d = driverRepository.getActiveBookingByDriver(driverId);
+        System.out.println("Driver booking = " + d);
+        return d;
+    }
+
 
     @Override
     public UpdateBookingResponseDto updateStatus(UpdateBookingRequestDto bookingRequestDto) {

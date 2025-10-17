@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/booking")
+@RequestMapping("/")
 public class BookingController {
     private final BookingServiceImpl bookingService;
 
@@ -15,8 +15,10 @@ public class BookingController {
         this.bookingService = bookingService;
     }
 
-    @PostMapping()
+    @PostMapping("/")
     public ResponseEntity<CreateBookingResponseDto> createBooking(@RequestBody CreateBookingRequestDto createBookingRequestDto) {
+        System.out.println("here llll");
+
         CreateBookingResponseDto response = bookingService.createBooking(createBookingRequestDto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -37,10 +39,16 @@ public class BookingController {
         return new ResponseEntity<>(bookingService.getBookingDetails(bookingId) , HttpStatus.OK);
     }
 
-    @GetMapping("/active/{passengerId}")
+    @GetMapping("/active/passenger/{passengerId}")
     public ResponseEntity<Long> getActiveBookingOfPassenger(@PathVariable Long passengerId){
         return new ResponseEntity<>(bookingService.getActiveBooking(passengerId) , HttpStatus.OK);
     }
+
+    @GetMapping("/active/driver/{driverId}")
+    public ResponseEntity<Long> getActiveBookingOfDriver(@PathVariable Long driverId) {
+        return ResponseEntity.ok(bookingService.getActiveBookingOfDriver(driverId));
+    }
+
 
     @PostMapping("/{bookingId}/complete")
     public ResponseEntity<String> completeBooking(@PathVariable Long bookingId, @RequestBody CompleteBookingRequestDto completeBookingRequestDto){
