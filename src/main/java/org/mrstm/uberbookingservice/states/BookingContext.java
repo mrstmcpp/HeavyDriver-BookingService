@@ -33,7 +33,6 @@ public class BookingContext {
     }
 
     public void updateStatus(BookingStatus newStatus , Long bookingId, UpdateBookingRequestDto updateBookingRequestDto){
-
         state.updateStatus(this, newStatus , bookingId , updateBookingRequestDto);
     }
 

@@ -50,6 +50,9 @@ dependencies {
     // https://mvnrepository.com/artifact/redis.clients/jedis
     implementation group: 'redis.clients', name: 'jedis', version: '6.0.0'
 
+    // https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common
+    implementation 'org.glassfish.jersey.core:jersey-common:4.0.0-M4'
+
 }
 
 tasks.named('test') {

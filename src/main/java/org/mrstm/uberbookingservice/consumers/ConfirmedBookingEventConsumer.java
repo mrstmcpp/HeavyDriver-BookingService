@@ -32,6 +32,8 @@ public class ConfirmedBookingEventConsumer {
                     .passengerId(rideResponseByDriver.getPassengerId())
                     .bookingStatus(BookingStatus.SCHEDULED)
                     .build();
+            System.out.println("details : " + rideResponseByDriver.getDriverId() + " , " + rideResponseByDriver.getPassengerId() + " , " + rideResponseByDriver.getBookingId());
+
             bookingService.updateBooking(updateRequest, Long.parseLong(rideResponseByDriver.getBookingId()));
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());

@@ -1,6 +1,7 @@
 package org.mrstm.uberbookingservice.services;
 
 import org.mrstm.uberbookingservice.repositories.BookingRepository;
+import org.mrstm.uberentityservice.dto.booking.StartRideWithOtp;
 import org.mrstm.uberentityservice.dto.driver.BookingDTO;
 import org.mrstm.uberentityservice.dto.driver.BookingsByDriverResponseDto;
 import org.springframework.data.domain.Page;
@@ -54,6 +55,15 @@ public class DriverBookingServicesImpl implements DriverBookingServices {
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Error fetching all bookings for driverId: " + driverId, e);
+        }
+    }
+
+    @Override
+    public String startRideWithOtp(StartRideWithOtp startRideWithOtp, String bookingId, String driverId) {
+        try {
+            return "";
+        } catch (Exception e) {
+            throw new RuntimeException("Error in starting ride for driverId: " + driverId + " & bookingId: "  + bookingId , e);
         }
     }
 }

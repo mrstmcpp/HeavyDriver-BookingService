@@ -1,6 +1,8 @@
 package org.mrstm.uberbookingservice.controllers;
 
+import org.apache.coyote.Response;
 import org.mrstm.uberbookingservice.dto.*;
+import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.services.BookingServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +58,8 @@ public class BookingController {
     }
 
     @PutMapping("/updateStatus")
-    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@RequestBody UpdateBookingRequestDto updateBookingRequestDto){
+    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@RequestBody UpdatingStateDto updateBookingRequestDto){
         return new ResponseEntity<>(bookingService.updateStatus(updateBookingRequestDto) , HttpStatus.OK);
     }
+
 }

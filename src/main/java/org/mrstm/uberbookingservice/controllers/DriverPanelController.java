@@ -2,14 +2,12 @@ package org.mrstm.uberbookingservice.controllers;
 
 import org.apache.coyote.Response;
 import org.mrstm.uberbookingservice.services.DriverBookingServices;
+import org.mrstm.uberentityservice.dto.booking.StartRideWithOtp;
 import org.mrstm.uberentityservice.dto.driver.BookingsByDriverResponseDto;
 import org.mrstm.uberentityservice.models.Booking;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -43,5 +41,12 @@ public class DriverPanelController {
         catch (Exception e){
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+
+
+    @PutMapping("/driver/{driverId}/booking/{bookingId}/start")
+    public ResponseEntity<String> startRideWithOtp(@RequestBody StartRideWithOtp startRideWithOtp, @PathVariable String bookingId , @PathVariable String driverId){
+        return new ResponseEntity<>(driverBookingServices.startRideWithOtp(startRideWithOtp , bookingId , driverId), HttpStatus.OK);
     }
 }

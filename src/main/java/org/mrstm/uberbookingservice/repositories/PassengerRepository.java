@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface PassengerRepository extends JpaRepository<Passenger, Long> {
     @Query("SELECT p.activeBooking.id FROM Passenger p WHERE p.id = :passengerId")
@@ -24,5 +26,6 @@ public interface PassengerRepository extends JpaRepository<Passenger, Long> {
     @Query("UPDATE Passenger p SET p.activeBooking = :booking WHERE p.id = :passengerId")
     void setActiveBooking(@Param("passengerId") Long passengerId , @Param("booking") Booking booking);
 
-    Passenger getPassengerByActiveBookingId(Long activeBookingId);
+    List<Passenger> findPassengerByActiveBookingId(Long activeBookingId);
+
 }

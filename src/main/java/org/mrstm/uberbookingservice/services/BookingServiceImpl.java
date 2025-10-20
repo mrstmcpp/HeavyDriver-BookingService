@@ -2,9 +2,11 @@ package org.mrstm.uberbookingservice.services;
 
 
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import org.mrstm.uberbookingservice.apis.SocketApi;
 import org.mrstm.uberbookingservice.dto.*;
+import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.models.Location;
 import org.mrstm.uberbookingservice.repositories.BookingRepository;
 import org.mrstm.uberbookingservice.repositories.DriverRepository;
@@ -106,7 +108,7 @@ public class BookingServiceImpl implements BookingService {
 
             bookingRepository.updateBookingStatusAndDriverById(bookingId, BookingStatus.SCHEDULED, driver);
             driver.setActiveBooking(booking);
-            passengerRepository.setActiveBooking(Long.parseLong(bookingDetails.getPassengerId()) , booking);
+            passengerRepository.setActiveBooking(booking.getPassenger().getId(), booking);
             redisService.setDriverBookingPair(bookingDetails.getDriverId() , bookingDetails.getBookingId()); //storing in cachee
 
             OTP otp = OTP.make(booking);
@@ -253,32 +255,47 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Long getActiveBookingOfDriver(Long driverId) {
-        Long d = driverRepository.getActiveBookingByDriver(driverId);
-        System.out.println("Driver booking = " + d);
-        return d;
+        Optional<Long> activeBookingId =  driverRepository.getActiveBookingByDriver(driverId);
+        if(activeBookingId.isPresent()){
+            return activeBookingId.get();
+        }
+        return null;
     }
 
 
     @Override
-    public UpdateBookingResponseDto updateStatus(UpdateBookingRequestDto bookingRequestDto) {
-        BookingContext booking = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService);
+    public UpdateBookingResponseDto updateStatus(UpdatingStateDto bookingRequestDto) {
+        Long bookingId = driverRepository.getActiveBookingByDriver(Long.parseLong(bookingRequestDto.getDriverId()))
+                .orElseThrow(() -> new NotFoundException("No active booking found for driver " + bookingRequestDto.getDriverId()));
+
+
+        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService);
 //        Booking dbBooking = bookingRepository.getBookingById(bookingRequestDto.getBookingId());
-        BookingStatus currentStatus = bookingRepository.getBookingStatusById(Long.parseLong(bookingRequestDto.getBookingId()));
+        BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
 
 //        System.out.println("Current for : " + dbBooking.getId() + " -> " + currentStatus);
         System.out.println("Requested : " + bookingRequestDto.getBookingStatus());
 
-        booking.setState(getStateObject(currentStatus)); // database state would be here
+        Long passenger = passengerRepository.findPassengerByActiveBookingId(Long.parseLong(bookingRequestDto.getBookingId())).getFirst().getId();
+//        System.out.println("passenger : " + passenger);
+
 
         try {
-            booking.updateStatus(bookingRequestDto.getBookingStatus() , Long.parseLong(bookingRequestDto.getBookingId() ), bookingRequestDto);
+            UpdateBookingRequestDto dto = UpdateBookingRequestDto.builder()
+                    .passengerId(passenger.toString())
+                    .bookingStatus(bookingRequestDto.getBookingStatus())
+                    .driverId(bookingRequestDto.getDriverId())
+                    .bookingId(bookingRequestDto.getBookingId())
+                    .build();
+            bookingContext.setState(getStateObject(currentStatus)); // database state would be here
+            bookingContext.updateStatus(bookingRequestDto.getBookingStatus(), Long.parseLong(bookingRequestDto.getBookingId()), dto);
             bookingRepository.updateBookingStatus(
                     Long.parseLong(bookingRequestDto.getBookingId()),
                     bookingRequestDto.getBookingStatus()
             );
 
             return UpdateBookingResponseDto.builder()
-                    .bookingStatus(booking.getStatus())
+                    .bookingStatus(bookingContext.getStatus())
                     .bookingId(Long.parseLong(bookingRequestDto.getBookingId()))
                     .build();
         } catch (IllegalStateException e) {

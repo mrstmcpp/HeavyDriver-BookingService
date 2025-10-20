@@ -22,7 +22,7 @@ public interface DriverRepository extends JpaRepository<Driver,Long> {
     @Query("SELECT b FROM Driver d JOIN d.activeBooking b WHERE d.id = :driverId")
     Optional<Booking> getActiveBookingByDriverId(@Param("driverId") Long driverId);
 
-    @Query("SELECT p.activeBooking.id FROM Driver p WHERE p.id = :driverId")
-    Long getActiveBookingByDriver(@Param("driverId") Long driverId);
+    @Query("SELECT d.activeBooking.id FROM Driver d WHERE d.id = :driverId")
+    Optional<Long> getActiveBookingByDriver(@Param("driverId") Long driverId);
 
 }
