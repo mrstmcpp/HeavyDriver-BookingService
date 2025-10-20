@@ -2,7 +2,6 @@ package org.mrstm.uberbookingservice.services;
 
 
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import org.mrstm.uberbookingservice.apis.SocketApi;
 import org.mrstm.uberbookingservice.dto.*;
@@ -16,9 +15,6 @@ import org.mrstm.uberbookingservice.states.*;
 import org.mrstm.uberentityservice.dto.booking.BookingCreatedEvent;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 import java.util.Optional;
 
@@ -140,29 +136,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-
-
-    private void raiseRideRequestAsync(RideRequestDto rideRequestDto) {
-        Call<Boolean> call = socketApi.raiseRideRequests(rideRequestDto);
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(Call<Boolean> call, Response<Boolean> response) {
-                if(response.isSuccessful() && response.body() != null) {
-                    Boolean res = response.body();
-                    System.out.println("Booking successful. " + res.toString());
-                }else {
-                    System.out.println("Request Failed " + response.message());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<Boolean> call, Throwable throwable) {
-
-                System.out.println("Timeout while searching for driver.");
-            }
-        });
-    }
-
     @Override
     public String cancelBooking(CancelBookingRequestDto cancelBookingRequestDto) { //api just for development purposes
         Long bookingId = cancelBookingRequestDto.getBooking().getId();
@@ -179,14 +152,6 @@ public class BookingServiceImpl implements BookingService {
         passengerRepository.clearActiveBooking(booking.getPassenger().getId());
         return "Booking cancelled successfully.";
     }
-
-    @Override
-    public String completeBooking(Long bookingId , CompleteBookingRequestDto bookingCompleteRequestDto) { //api just for development purposes
-        Optional<Passenger> p = passengerRepository.findById(bookingCompleteRequestDto.getPassengerId());
-        p.ifPresent(passenger -> passenger.setActiveBooking(null));
-        return "Booking Completed successfully.";
-    }
-
 
     @Override
     public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId) {
@@ -220,30 +185,6 @@ public class BookingServiceImpl implements BookingService {
     }
 
 
-
-
-//    private void notifyPassenger(NotificationDTO notificationDTO , String passengerId){
-//        Call<Boolean> call = socketApi.notifyPassenger(notificationDTO , passengerId);
-//
-//        call.enqueue(new Callback<>() {
-//            @Override
-//            public void onResponse(Call<Boolean> call, Response<Boolean> response) {
-//                if(response.isSuccessful() && response.body() != null) {
-//                    Boolean res = response.body();
-//                    System.out.println("Passenger Notified. " + res);
-//                }else {
-//                    System.out.println("Notification Failed " + response.message());
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<Boolean> call, Throwable throwable) {
-//                System.out.println("Failed to send notification to passenger.");
-//            }
-//        });
-//    }
-
-
     @Override
     public Long getActiveBooking(Long passengerId) {
         try{
@@ -268,20 +209,20 @@ public class BookingServiceImpl implements BookingService {
         Long bookingId = driverRepository.getActiveBookingByDriver(Long.parseLong(bookingRequestDto.getDriverId()))
                 .orElseThrow(() -> new NotFoundException("No active booking found for driver " + bookingRequestDto.getDriverId()));
 
-
-        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService);
+        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService , otpRepository);
 //        Booking dbBooking = bookingRepository.getBookingById(bookingRequestDto.getBookingId());
         BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
 
 //        System.out.println("Current for : " + dbBooking.getId() + " -> " + currentStatus);
-        System.out.println("Requested : " + bookingRequestDto.getBookingStatus());
+//        System.out.println("Requested : " + bookingRequestDto.getBookingStatus());
 
         Long passenger = passengerRepository.findPassengerByActiveBookingId(Long.parseLong(bookingRequestDto.getBookingId())).getFirst().getId();
 //        System.out.println("passenger : " + passenger);
 
-
         try {
+            System.out.println(bookingRequestDto.getOtp());
             UpdateBookingRequestDto dto = UpdateBookingRequestDto.builder()
+                    .otp(bookingRequestDto.getOtp())
                     .passengerId(passenger.toString())
                     .bookingStatus(bookingRequestDto.getBookingStatus())
                     .driverId(bookingRequestDto.getDriverId())
@@ -303,7 +244,12 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-
+    @Override
+    public String getOtpForBooking(Long bookingId) {
+        return otpRepository.getOTPByBookingId(bookingId)
+                .map(OTP::getCode)
+                .orElseThrow(() -> new NotFoundException("No OTP found for booking ID: " + bookingId));
+    }
 
     public BookingState getStateObject(BookingStatus bookingStatus){
         switch (bookingStatus){

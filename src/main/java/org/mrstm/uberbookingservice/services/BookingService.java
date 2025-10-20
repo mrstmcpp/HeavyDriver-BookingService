@@ -13,8 +13,6 @@ public interface BookingService {
 
     public String cancelBooking(CancelBookingRequestDto cancelBookingRequestDto); //api just for development purposes
 
-    public String completeBooking(Long bookingId, CompleteBookingRequestDto bookingCompleteRequestDto); //api just for development purposes
-
     public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId);
 
     public Long getActiveBooking(Long passengerId);
@@ -22,6 +20,8 @@ public interface BookingService {
     public Long getActiveBookingOfDriver(Long driverId);
 
     public UpdateBookingResponseDto updateStatus(UpdatingStateDto bookingRequestDto);
+
+    public String getOtpForBooking(Long bookingId);
 
 
 

@@ -1,7 +1,12 @@
 package org.mrstm.uberbookingservice.states;
 
 import org.mrstm.uberbookingservice.dto.UpdateBookingRequestDto;
+import org.mrstm.uberbookingservice.exceptions.InvalidOtpException;
+import org.mrstm.uberbookingservice.exceptions.OtpNotFoundException;
+import org.mrstm.uberbookingservice.services.BookingService;
+import org.mrstm.uberbookingservice.services.BookingServiceImpl;
 import org.mrstm.uberentityservice.models.BookingStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 public class ArrivedDriverState implements BookingState{
@@ -9,6 +14,14 @@ public class ArrivedDriverState implements BookingState{
     public void updateStatus(BookingContext bookingContext, BookingStatus newStatus, Long bookingId, UpdateBookingRequestDto updateBookingRequestDto) {
         switch (newStatus){
             case IN_RIDE:
+                if(updateBookingRequestDto.getOtp() == null || updateBookingRequestDto.getOtp().isEmpty()){
+                    throw new OtpNotFoundException("OTP must be provided to start the ride.");
+                }
+                String otp = bookingContext.getOtpRepository().getOTPByBookingId(Long.parseLong(updateBookingRequestDto.getBookingId())).get().getCode();
+//                System.out.println(otp + " in arrived state class");
+                if(!updateBookingRequestDto.getOtp().equals(otp)){
+                    throw new InvalidOtpException("Invalid otp provided.");
+                }
                 bookingContext.setState(new InrideState());
                 break;
             case CANCELLED:

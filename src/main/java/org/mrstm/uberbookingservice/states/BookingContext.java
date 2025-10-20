@@ -6,7 +6,9 @@ import org.mrstm.uberbookingservice.dto.CompleteBookingRequestDto;
 import org.mrstm.uberbookingservice.dto.UpdateBookingRequestDto;
 import org.mrstm.uberbookingservice.repositories.BookingRepository;
 import org.mrstm.uberbookingservice.repositories.DriverRepository;
+import org.mrstm.uberbookingservice.repositories.OtpRepository;
 import org.mrstm.uberbookingservice.repositories.PassengerRepository;
+import org.mrstm.uberbookingservice.services.BookingService;
 import org.mrstm.uberbookingservice.services.RedisService;
 import org.mrstm.uberentityservice.models.BookingStatus;
 
@@ -18,13 +20,16 @@ public class BookingContext {
     private final PassengerRepository passengerRepository;
     private final DriverRepository driverRepository;
     private final RedisService redisService;
+    private final OtpRepository otpRepository;
 
 
-    public BookingContext(BookingRepository bookingRepository, PassengerRepository passengerRepository, DriverRepository driverRepository, RedisService redisService){
+    public BookingContext(BookingRepository bookingRepository, PassengerRepository passengerRepository, DriverRepository driverRepository, RedisService redisService, OtpRepository otpRepository){
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
         this.driverRepository = driverRepository;
         this.redisService = redisService;
+        this.otpRepository = otpRepository;
+
         this.state = new ScheduledState();
     }
 
