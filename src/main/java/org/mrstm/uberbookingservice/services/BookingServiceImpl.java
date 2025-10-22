@@ -1,6 +1,7 @@
 package org.mrstm.uberbookingservice.services;
 
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import org.mrstm.uberbookingservice.apis.SocketApi;
@@ -12,10 +13,12 @@ import org.mrstm.uberbookingservice.repositories.DriverRepository;
 import org.mrstm.uberbookingservice.repositories.OtpRepository;
 import org.mrstm.uberbookingservice.repositories.PassengerRepository;
 import org.mrstm.uberbookingservice.states.*;
+import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
 import org.mrstm.uberentityservice.dto.booking.BookingCreatedEvent;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -47,6 +50,7 @@ public class BookingServiceImpl implements BookingService {
         try{
             Passenger p = passengerRepository.findById(bookingDetails.getPassengerId()).orElseThrow(() -> new RuntimeException("Passenger not found with id: " + bookingDetails.getPassengerId()));
             if(p.getActiveBooking() != null){
+                System.out.println(p.getId() + " " + p.getPassanger_name());
                 throw new IllegalArgumentException("Passenger already have active booking.");
             }
             Booking booking = Booking.builder()
@@ -154,34 +158,61 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId) {
+    public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId, GetBookingDetailsRequestDto requestDto) {
+        if (requestDto == null || requestDto.getUserId() == null) {
+            throw new IllegalArgumentException("User ID cannot be null.");
+        }
+
+        if (requestDto.getRole() == null || requestDto.getRole().isBlank()) {
+            throw new IllegalArgumentException("Role must be provided.");
+        }
+
         Booking booking = bookingRepository.getBookingById(bookingId);
         if (booking == null) {
-            return null;
+            throw new EntityNotFoundException("Booking not found for ID: " + bookingId);
         }
-//        System.out.println("OTP is : " + booking.getOtp().getCode());
 
-        GetBookingDetailsResponseDTO response = GetBookingDetailsResponseDTO.builder()
-                .bookingId(booking.getId())
-                .otp(booking.getOtp().getCode())
-                .bookingStatus(booking.getBookingStatus().toString())
-                .driverId(booking.getDriver().getId())
-                .driverName(booking.getDriver().getFullName())
-                .startTime(booking.getStartTime())
+        String role = requestDto.getRole().trim().toUpperCase();
+        String userId = requestDto.getUserId();
 
-                .startLocation(Location.builder()
-                        .latitude(booking.getStartLocation().getLatitude())
-                        .longitude(booking.getStartLocation().getLongitude())
-                        .build())
+        switch (role) {
+            case "DRIVER":
+                if (!booking.getDriver().getId().toString().equals(userId)) {
+                    throw new IllegalArgumentException("This booking does not belong to this driver.");
+                }
+                break;
 
-                .endLocation(Location.builder()
-                        .latitude(booking.getEndLocation().getLatitude())
-                        .longitude(booking.getEndLocation().getLongitude())
-                        .build())
+            case "PASSENGER":
+                if (!booking.getPassenger().getId().toString().equals(userId)) {
+                    throw new IllegalArgumentException("This booking does not belong to this passenger.");
+                }
+                break;
 
-                .build();
+            default:
+                throw new IllegalArgumentException("Invalid role: " + role);
+        }
 
-        return (response);
+        GetBookingDetailsResponseDTO.GetBookingDetailsResponseDTOBuilder responseBuilder =
+                GetBookingDetailsResponseDTO.builder()
+                        .bookingId(booking.getId())
+                        .bookingStatus(booking.getBookingStatus().toString())
+                        .driverId(booking.getDriver().getId())
+                        .driverName(booking.getDriver().getFullName())
+                        .startTime(booking.getStartTime())
+                        .startLocation(Location.builder()
+                                .latitude(booking.getStartLocation().getLatitude())
+                                .longitude(booking.getStartLocation().getLongitude())
+                                .build())
+                        .endLocation(Location.builder()
+                                .latitude(booking.getEndLocation().getLatitude())
+                                .longitude(booking.getEndLocation().getLongitude())
+                                .build());
+
+        if ("PASSENGER".equals(role) && booking.getOtp() != null) {
+            responseBuilder.otp(booking.getOtp().getCode());
+        }
+
+        return responseBuilder.build();
     }
 
 
@@ -195,12 +226,12 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public Long getActiveBookingOfDriver(Long driverId) {
+    public ActiveBookingDTO getActiveBookingOfDriver(Long driverId) {
         Optional<Long> activeBookingId =  driverRepository.getActiveBookingByDriver(driverId);
-        if(activeBookingId.isPresent()){
-            return activeBookingId.get();
-        }
-        return null;
+        return activeBookingId.map(aLong -> ActiveBookingDTO.builder()
+                .bookingId(aLong.toString())
+                .bookingStatus(bookingRepository.getBookingStatusById(aLong))
+                .build()).orElse(null);
     }
 
 

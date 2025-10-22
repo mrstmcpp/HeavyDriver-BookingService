@@ -4,6 +4,7 @@ import org.apache.coyote.Response;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.services.BookingServiceImpl;
+import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,9 +37,9 @@ public class BookingController {
         return new ResponseEntity<>(bookingService.updateBooking(requestDto , bookingId) , HttpStatus.OK);
     }
 
-    @GetMapping("/{bookingId}")
-    public ResponseEntity<GetBookingDetailsResponseDTO> getBookingDetails(@PathVariable Long bookingId){
-        return new ResponseEntity<>(bookingService.getBookingDetails(bookingId) , HttpStatus.OK);
+    @PostMapping("/details/{bookingId}")
+    public ResponseEntity<GetBookingDetailsResponseDTO> getBookingDetails(@PathVariable Long bookingId ,@RequestBody GetBookingDetailsRequestDto getBookingDetailsRequestDto){
+        return new ResponseEntity<>(bookingService.getBookingDetails(bookingId , getBookingDetailsRequestDto) , HttpStatus.OK);
     }
 
     @GetMapping("/active/passenger/{passengerId}")
@@ -47,7 +48,7 @@ public class BookingController {
     }
 
     @GetMapping("/active/driver/{driverId}")
-    public ResponseEntity<Long> getActiveBookingOfDriver(@PathVariable Long driverId) {
+    public ResponseEntity<ActiveBookingDTO> getActiveBookingOfDriver(@PathVariable Long driverId) {
         return ResponseEntity.ok(bookingService.getActiveBookingOfDriver(driverId));
     }
 

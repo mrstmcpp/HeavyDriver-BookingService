@@ -1,6 +1,8 @@
 package org.mrstm.uberbookingservice.controllers;
 
 import org.apache.coyote.Response;
+import org.mrstm.uberbookingservice.dto.GetBookingDetailsRequestDto;
+import org.mrstm.uberbookingservice.dto.GetBookingDetailsResponseDTO;
 import org.mrstm.uberbookingservice.services.DriverBookingServices;
 import org.mrstm.uberentityservice.dto.booking.StartRideWithOtp;
 import org.mrstm.uberentityservice.dto.driver.BookingsByDriverResponseDto;
@@ -49,4 +51,6 @@ public class DriverPanelController {
     public ResponseEntity<String> startRideWithOtp(@RequestBody StartRideWithOtp startRideWithOtp, @PathVariable String bookingId , @PathVariable String driverId){
         return new ResponseEntity<>(driverBookingServices.startRideWithOtp(startRideWithOtp , bookingId , driverId), HttpStatus.OK);
     }
+
+
 }
