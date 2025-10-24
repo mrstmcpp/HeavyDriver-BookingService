@@ -10,11 +10,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PassengerRepository extends JpaRepository<Passenger, Long> {
-    @Query("SELECT p.activeBooking.id FROM Passenger p WHERE p.id = :passengerId")
-     Long getActiveBookingByPassengerId(@Param("passengerId") Long passengerId);
+    @Query("SELECT p.activeBooking FROM Passenger p WHERE p.id = :passengerId")
+    Optional<Booking> getActiveBookingByPassengerId(@Param("passengerId") Long passengerId);
 
     @Modifying
     @Transactional

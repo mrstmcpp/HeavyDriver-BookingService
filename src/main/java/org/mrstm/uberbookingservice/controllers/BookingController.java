@@ -19,18 +19,18 @@ public class BookingController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<CreateBookingResponseDto> createBooking(@RequestBody CreateBookingRequestDto createBookingRequestDto) {
+    public ResponseEntity<CreateBookingResponseDto> createBooking(@RequestBody CreateBookingRequestDto createBookingRequestDto , @RequestHeader("Idempotency-Key") String idempotencyKey) {
         System.out.println("here llll");
 
-        CreateBookingResponseDto response = bookingService.createBooking(createBookingRequestDto);
+        CreateBookingResponseDto response = bookingService.createBooking(createBookingRequestDto , idempotencyKey);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @GetMapping("/feign")
-    public ResponseEntity<CreateBookingResponseDto> createBookingFeign(@RequestBody CreateBookingRequestDto createBookingRequestDto) {
-        CreateBookingResponseDto response = bookingService.createBooking(createBookingRequestDto);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
+//    @GetMapping("/feign")
+//    public ResponseEntity<CreateBookingResponseDto> createBookingFeign(@RequestBody CreateBookingRequestDto createBookingRequestDto) {
+//        CreateBookingResponseDto response = bookingService.createBooking(createBookingRequestDto);
+//        return new ResponseEntity<>(response, HttpStatus.CREATED);
+//    }
 
     @PostMapping("/{bookingId}")
     public ResponseEntity<UpdateBookingResponseDto> updateBooking(@RequestBody UpdateBookingRequestDto requestDto , @PathVariable Long bookingId){
@@ -43,7 +43,7 @@ public class BookingController {
     }
 
     @GetMapping("/active/passenger/{passengerId}")
-    public ResponseEntity<Long> getActiveBookingOfPassenger(@PathVariable Long passengerId){
+    public ResponseEntity<ActiveBookingDTO> getActiveBookingOfPassenger(@PathVariable Long passengerId){
         return new ResponseEntity<>(bookingService.getActiveBooking(passengerId) , HttpStatus.OK);
     }
 

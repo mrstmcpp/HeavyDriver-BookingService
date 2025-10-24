@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface BookingService {
-    public CreateBookingResponseDto createBooking(CreateBookingRequestDto bookingDetails);
+    public CreateBookingResponseDto createBooking(CreateBookingRequestDto bookingDetails , String idempotencyKey);
 
     public UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto bookingDetails , Long bookingId);
 
@@ -16,7 +16,7 @@ public interface BookingService {
 
     public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId , GetBookingDetailsRequestDto getBookingDetailsRequestDto);
 
-    public Long getActiveBooking(Long passengerId);
+    public ActiveBookingDTO getActiveBooking(Long passengerId);
 
     public ActiveBookingDTO getActiveBookingOfDriver(Long driverId);
 

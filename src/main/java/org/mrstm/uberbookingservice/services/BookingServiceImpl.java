@@ -1,6 +1,7 @@
 package org.mrstm.uberbookingservice.services;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
@@ -8,10 +9,7 @@ import org.mrstm.uberbookingservice.apis.SocketApi;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.models.Location;
-import org.mrstm.uberbookingservice.repositories.BookingRepository;
-import org.mrstm.uberbookingservice.repositories.DriverRepository;
-import org.mrstm.uberbookingservice.repositories.OtpRepository;
-import org.mrstm.uberbookingservice.repositories.PassengerRepository;
+import org.mrstm.uberbookingservice.repositories.*;
 import org.mrstm.uberbookingservice.states.*;
 import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
 import org.mrstm.uberentityservice.dto.booking.BookingCreatedEvent;
@@ -30,12 +28,14 @@ public class BookingServiceImpl implements BookingService {
     private final SocketApi socketApi;
     private final KafkaService kafkaService;
     private final RedisService redisService;
+    private final IdempotencyRepository idempotencyRepository;
+    private final ObjectMapper objectMapper;
 
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               PassengerRepository passengerRepository, OtpRepository otpRepository,
                               DriverRepository driverRepository ,
-                              SocketApi socketApi, KafkaService kafkaService, RedisService redisService) {
+                              SocketApi socketApi, KafkaService kafkaService, RedisService redisService, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper) {
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
         this.otpRepository = otpRepository;
@@ -43,11 +43,19 @@ public class BookingServiceImpl implements BookingService {
         this.socketApi = socketApi;
         this.kafkaService = kafkaService;
         this.redisService = redisService;
+        this.idempotencyRepository = idempotencyRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    public CreateBookingResponseDto createBooking(CreateBookingRequestDto bookingDetails) {
+    @Transactional
+    public CreateBookingResponseDto createBooking(CreateBookingRequestDto bookingDetails , String idempotencyKey) {
         try{
+            Optional<IdempotencyRecord> existing = idempotencyRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                return objectMapper.readValue(existing.get().getResponseData(), CreateBookingResponseDto.class);
+            }
+
             Passenger p = passengerRepository.findById(bookingDetails.getPassengerId()).orElseThrow(() -> new RuntimeException("Passenger not found with id: " + bookingDetails.getPassengerId()));
             if(p.getActiveBooking() != null){
                 System.out.println(p.getId() + " " + p.getPassanger_name());
@@ -61,20 +69,30 @@ public class BookingServiceImpl implements BookingService {
                     .build();
             System.out.println("here");
 
+            Booking newBooking = bookingRepository.save(booking);
             NearbyDriversRequestDto req = NearbyDriversRequestDto.builder()
                     .dropLocation(bookingDetails.getEndLocation())
                     .pickupLocation(bookingDetails.getStartLocation())
                     .build();
 
-            Booking newBooking = bookingRepository.save(booking);
             //changing to kafka
             processNearbyDriverAsync(req , bookingDetails.getPassengerId() , newBooking.getId());
-
-            return CreateBookingResponseDto.builder()
+            CreateBookingResponseDto response = CreateBookingResponseDto.builder()
                     .bookingId(newBooking.getId())
                     .bookingStatus(newBooking.getBookingStatus().toString())
                     .driver(Optional.ofNullable(newBooking.getDriver()))
                     .build();
+
+            IdempotencyRecord record = IdempotencyRecord.builder()
+                    .idempotencyKey(idempotencyKey)
+                    .passengerId(p.getId())
+                    .booking(booking)
+                    .responseData(objectMapper.writeValueAsString(response))
+                    .build();
+            idempotencyRepository.save(record);
+
+
+            return response;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -199,11 +217,11 @@ public class BookingServiceImpl implements BookingService {
                         .driverId(booking.getDriver().getId())
                         .driverName(booking.getDriver().getFullName())
                         .startTime(booking.getStartTime())
-                        .startLocation(Location.builder()
+                        .pickupLocation(Location.builder()
                                 .latitude(booking.getStartLocation().getLatitude())
                                 .longitude(booking.getStartLocation().getLongitude())
                                 .build())
-                        .endLocation(Location.builder()
+                        .dropoffLocation(Location.builder()
                                 .latitude(booking.getEndLocation().getLatitude())
                                 .longitude(booking.getEndLocation().getLongitude())
                                 .build());
@@ -217,9 +235,14 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Override
-    public Long getActiveBooking(Long passengerId) {
+    public ActiveBookingDTO getActiveBooking(Long passengerId) {
         try{
-            return passengerRepository.getActiveBookingByPassengerId(passengerId);
+             Optional<Booking> booking = passengerRepository.getActiveBookingByPassengerId(passengerId);
+            if(booking.isEmpty()){
+                return null;
+            }
+                return ActiveBookingDTO.builder().bookingId(booking.get().getId().toString())
+                        .bookingStatus(booking.get().getBookingStatus()).build();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

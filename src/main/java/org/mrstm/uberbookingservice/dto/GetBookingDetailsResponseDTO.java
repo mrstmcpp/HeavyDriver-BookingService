@@ -16,8 +16,8 @@ public class GetBookingDetailsResponseDTO {
     private Long bookingId;
     private String driverName;
     private String bookingStatus;
-    private Location startLocation;
-    private Location endLocation;
+    private Location pickupLocation;
+    private Location dropoffLocation;
     private Date startTime;
     private String otp;
 }
