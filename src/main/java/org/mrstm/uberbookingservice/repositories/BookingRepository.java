@@ -36,9 +36,11 @@ public interface BookingRepository extends JpaRepository<Booking,Long> {
     //druver panel queries
     @Query("SELECT new org.mrstm.uberentityservice.dto.driver.BookingDTO(b.id, b.bookingStatus, b.createdAt, b.driver.id) " +
             "FROM Booking b " +
-            "WHERE b.driver.id = :driverId")
+            "WHERE b.driver.id = :driverId " +
+            "ORDER BY b.createdAt DESC")
     Page<BookingDTO> findAllBookingsByDriverId(@Param("driverId") Long driverId,
                                                Pageable pageable);
+
 
     @Query("SELECT new org.mrstm.uberentityservice.dto.driver.BookingDTO(b.id, b.bookingStatus, b.createdAt, b.driver.id) " +
             "FROM Booking b " +

@@ -1,10 +1,10 @@
 package org.mrstm.uberbookingservice.controllers;
 
-import org.apache.coyote.Response;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.services.BookingServiceImpl;
 import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
+import org.mrstm.uberentityservice.dto.booking.RetryBookingRequestDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,9 +53,14 @@ public class BookingController {
     }
 
 
-    @PutMapping("/updateStatus")
-    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@RequestBody UpdatingStateDto updateBookingRequestDto){
-        return new ResponseEntity<>(bookingService.updateStatus(updateBookingRequestDto) , HttpStatus.OK);
+    @PutMapping("/{bookingId}/updateStatus")
+    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@PathVariable String bookingId ,@RequestBody UpdatingStateDto updateBookingRequestDto){
+        return new ResponseEntity<>(bookingService.updateStatus(bookingId , updateBookingRequestDto) , HttpStatus.OK);
+    }
+
+    @PostMapping("/{bookingId}/retry")
+    public ResponseEntity<String> retryBookingRequest(@PathVariable String bookingId, @RequestBody RetryBookingRequestDto requestDto){
+        return new ResponseEntity<>(bookingService.retryBookingRequest(bookingId , requestDto) , HttpStatus.OK);
     }
 
 }

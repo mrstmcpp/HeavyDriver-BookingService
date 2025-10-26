@@ -10,4 +10,5 @@ import lombok.*;
 public class Location {
     private Double latitude;
     private Double longitude;
+    private String address;
 }

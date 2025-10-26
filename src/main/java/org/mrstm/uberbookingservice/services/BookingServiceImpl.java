@@ -2,21 +2,23 @@ package org.mrstm.uberbookingservice.services;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.mrstm.uberbookingservice.apis.SocketApi;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
+import org.mrstm.uberbookingservice.exceptions.AccessDeniedException;
 import org.mrstm.uberbookingservice.models.Location;
 import org.mrstm.uberbookingservice.repositories.*;
 import org.mrstm.uberbookingservice.states.*;
 import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
 import org.mrstm.uberentityservice.dto.booking.BookingCreatedEvent;
+import org.mrstm.uberentityservice.dto.booking.RetryBookingRequestDto;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -90,8 +92,6 @@ public class BookingServiceImpl implements BookingService {
                     .responseData(objectMapper.writeValueAsString(response))
                     .build();
             idempotencyRepository.save(record);
-
-
             return response;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -177,17 +177,21 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId, GetBookingDetailsRequestDto requestDto) {
-        if (requestDto == null || requestDto.getUserId() == null) {
-            throw new IllegalArgumentException("User ID cannot be null.");
+        if (requestDto == null) {
+            throw new BadRequestException("Request body cannot be null.");
+        }
+
+        if (requestDto.getUserId() == null || requestDto.getUserId().isBlank()) {
+            throw new BadRequestException("User ID must be provided.");
         }
 
         if (requestDto.getRole() == null || requestDto.getRole().isBlank()) {
-            throw new IllegalArgumentException("Role must be provided.");
+            throw new BadRequestException("Role must be provided.");
         }
 
         Booking booking = bookingRepository.getBookingById(bookingId);
         if (booking == null) {
-            throw new EntityNotFoundException("Booking not found for ID: " + bookingId);
+            throw new ResourceNotFoundException("Booking not found for ID: " + bookingId);
         }
 
         String role = requestDto.getRole().trim().toUpperCase();
@@ -195,35 +199,39 @@ public class BookingServiceImpl implements BookingService {
 
         switch (role) {
             case "DRIVER":
-                if (!booking.getDriver().getId().toString().equals(userId)) {
-                    throw new IllegalArgumentException("This booking does not belong to this driver.");
+                if (booking.getDriver() == null ||
+                        !booking.getDriver().getId().toString().equals(userId)) {
+                    throw new AccessDeniedException("This booking does not belong to this driver.");
                 }
                 break;
 
             case "PASSENGER":
-                if (!booking.getPassenger().getId().toString().equals(userId)) {
-                    throw new IllegalArgumentException("This booking does not belong to this passenger.");
+                if (booking.getPassenger() == null ||
+                        !booking.getPassenger().getId().toString().equals(userId)) {
+                    throw new AccessDeniedException("This booking does not belong to this passenger.");
                 }
                 break;
 
             default:
-                throw new IllegalArgumentException("Invalid role: " + role);
+                throw new BadRequestException("Invalid role: " + role);
         }
 
         GetBookingDetailsResponseDTO.GetBookingDetailsResponseDTOBuilder responseBuilder =
                 GetBookingDetailsResponseDTO.builder()
                         .bookingId(booking.getId())
                         .bookingStatus(booking.getBookingStatus().toString())
-                        .driverId(booking.getDriver().getId())
-                        .driverName(booking.getDriver().getFullName())
+                        .driverId(booking.getDriver() != null ? booking.getDriver().getId() : null)
+                        .driverName(booking.getDriver() != null ? booking.getDriver().getFullName() : null)
                         .startTime(booking.getStartTime())
                         .pickupLocation(Location.builder()
                                 .latitude(booking.getStartLocation().getLatitude())
                                 .longitude(booking.getStartLocation().getLongitude())
+                                .address(booking.getStartLocation().getAddress())
                                 .build())
                         .dropoffLocation(Location.builder()
                                 .latitude(booking.getEndLocation().getLatitude())
                                 .longitude(booking.getEndLocation().getLongitude())
+                                .address(booking.getEndLocation().getAddress())
                                 .build());
 
         if ("PASSENGER".equals(role) && booking.getOtp() != null) {
@@ -232,6 +240,7 @@ public class BookingServiceImpl implements BookingService {
 
         return responseBuilder.build();
     }
+
 
 
     @Override
@@ -259,7 +268,7 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Override
-    public UpdateBookingResponseDto updateStatus(UpdatingStateDto bookingRequestDto) {
+    public UpdateBookingResponseDto updateStatus(String bookingIdByPassenger, UpdatingStateDto bookingRequestDto) {
         Long bookingId = driverRepository.getActiveBookingByDriver(Long.parseLong(bookingRequestDto.getDriverId()))
                 .orElseThrow(() -> new NotFoundException("No active booking found for driver " + bookingRequestDto.getDriverId()));
 
@@ -270,7 +279,7 @@ public class BookingServiceImpl implements BookingService {
 //        System.out.println("Current for : " + dbBooking.getId() + " -> " + currentStatus);
 //        System.out.println("Requested : " + bookingRequestDto.getBookingStatus());
 
-        Long passenger = passengerRepository.findPassengerByActiveBookingId(Long.parseLong(bookingRequestDto.getBookingId())).getFirst().getId();
+        Long passenger = passengerRepository.findPassengerByActiveBookingId(Long.parseLong(bookingIdByPassenger)).getFirst().getId();
 //        System.out.println("passenger : " + passenger);
 
         try {
@@ -280,18 +289,18 @@ public class BookingServiceImpl implements BookingService {
                     .passengerId(passenger.toString())
                     .bookingStatus(bookingRequestDto.getBookingStatus())
                     .driverId(bookingRequestDto.getDriverId())
-                    .bookingId(bookingRequestDto.getBookingId())
+                    .bookingId(bookingIdByPassenger)
                     .build();
             bookingContext.setState(getStateObject(currentStatus)); // database state would be here
-            bookingContext.updateStatus(bookingRequestDto.getBookingStatus(), Long.parseLong(bookingRequestDto.getBookingId()), dto);
+            bookingContext.updateStatus(bookingRequestDto.getBookingStatus(), Long.parseLong(bookingIdByPassenger), dto);
             bookingRepository.updateBookingStatus(
-                    Long.parseLong(bookingRequestDto.getBookingId()),
+                    Long.parseLong(bookingIdByPassenger),
                     bookingRequestDto.getBookingStatus()
             );
 
             return UpdateBookingResponseDto.builder()
                     .bookingStatus(bookingContext.getStatus())
-                    .bookingId(Long.parseLong(bookingRequestDto.getBookingId()))
+                    .bookingId(Long.parseLong(bookingIdByPassenger))
                     .build();
         } catch (IllegalStateException e) {
             throw new IllegalStateException("Transition not allowed: " + currentStatus + " -> " + bookingRequestDto.getBookingStatus());
@@ -303,6 +312,30 @@ public class BookingServiceImpl implements BookingService {
         return otpRepository.getOTPByBookingId(bookingId)
                 .map(OTP::getCode)
                 .orElseThrow(() -> new NotFoundException("No OTP found for booking ID: " + bookingId));
+    }
+
+    @Override
+    public String retryBookingRequest(String bookingId, RetryBookingRequestDto requestDto) {
+        try{
+            Optional<Booking> activeBooking = bookingRepository.findById(Long.parseLong(bookingId));
+            if(activeBooking.isEmpty()){
+                throw new NotFoundException("Passenger ID doesn't match with booking ID.");
+            }
+            if(!activeBooking.get().getBookingStatus().equals(BookingStatus.ASSIGNING_DRIVER)){
+                throw new IllegalArgumentException("This booking status is not eligible for retrying.");
+            }
+            if(activeBooking.get().getPassenger().getId().equals(Long.parseLong(requestDto.getPassengerId()))){
+                NearbyDriversRequestDto nearbyDriversRequestDto = NearbyDriversRequestDto.builder()
+                        .pickupLocation(activeBooking.get().getStartLocation())
+                        .dropLocation(activeBooking.get().getEndLocation())
+                        .build();
+                processNearbyDriverAsync(nearbyDriversRequestDto , Long.parseLong(requestDto.getPassengerId()) , Long.parseLong(bookingId));
+                return "Sent retried request.";
+            }
+            return null;
+        }catch(RuntimeException e){
+            throw new RuntimeException("Error while retrying booking request." + e.getMessage());
+        }
     }
 
     public BookingState getStateObject(BookingStatus bookingStatus){

@@ -10,7 +10,6 @@ import org.mrstm.uberentityservice.models.BookingStatus;
 @AllArgsConstructor
 public class UpdatingStateDto {
     private String otp;
-    private String bookingId;
     private String driverId;
     private BookingStatus bookingStatus;
 }
