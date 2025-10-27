@@ -13,9 +13,7 @@ import org.mrstm.uberbookingservice.exceptions.AccessDeniedException;
 import org.mrstm.uberbookingservice.models.Location;
 import org.mrstm.uberbookingservice.repositories.*;
 import org.mrstm.uberbookingservice.states.*;
-import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
-import org.mrstm.uberentityservice.dto.booking.BookingCreatedEvent;
-import org.mrstm.uberentityservice.dto.booking.RetryBookingRequestDto;
+import org.mrstm.uberentityservice.dto.booking.*;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
 
@@ -140,12 +138,15 @@ public class BookingServiceImpl implements BookingService {
                     .bookingId(bookingId)
                     .bookingStatus(booking.getBookingStatus())
                     .build();
-            NotificationDTO notificationDTO = NotificationDTO.builder()
-                    .bookingId(bookingId)
-                    .driverId(driver.getId())
+            ConfirmedNotificationToPassengerDto notificationDTO = ConfirmedNotificationToPassengerDto.builder()
+                    .bookingId(bookingId.toString())
+                    .driverId(driver.getId().toString())
+                    .passengerId(booking.getPassenger().getId().toString())
                     .fullName(driver.getFullName())
-                    .bookingStatus(booking.getBookingStatus().toString())
+                    .bookingStatus(booking.getBookingStatus())
                     .build();
+            kafkaService.publishBookingConfirmedNotification(notificationDTO);
+
             System.out.println("Your ride with: " + driver.getFullName() + " is scheduled.");
             return response;
 
@@ -298,10 +299,16 @@ public class BookingServiceImpl implements BookingService {
                     bookingRequestDto.getBookingStatus()
             );
 
-            return UpdateBookingResponseDto.builder()
+            UpdateBookingResponseDto updateBookingResponseDto = UpdateBookingResponseDto.builder()
                     .bookingStatus(bookingContext.getStatus())
                     .bookingId(Long.parseLong(bookingIdByPassenger))
                     .build();
+
+            //seding notification
+
+
+
+            return updateBookingResponseDto;
         } catch (IllegalStateException e) {
             throw new IllegalStateException("Transition not allowed: " + currentStatus + " -> " + bookingRequestDto.getBookingStatus());
         }

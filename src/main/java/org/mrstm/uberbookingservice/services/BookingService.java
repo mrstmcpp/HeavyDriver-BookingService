@@ -5,6 +5,7 @@ import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
 import org.mrstm.uberentityservice.dto.booking.RetryBookingRequestDto;
+import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.springframework.stereotype.Service;
 
 @Service
