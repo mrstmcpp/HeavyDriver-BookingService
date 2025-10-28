@@ -1,6 +1,7 @@
 package org.mrstm.uberbookingservice.repositories;
 
 import org.mrstm.uberentityservice.dto.driver.BookingDTO;
+import org.mrstm.uberentityservice.dto.passenger.PassengerBookingDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +17,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface BookingRepository extends JpaRepository<Booking,Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Booking b SET b.bookingStatus = :status , b.driver = :driver WHERE b.id = :id")
-    void updateBookingStatusAndDriverById(@Param("id") Long id , @Param("status") BookingStatus Status , @Param("driver") Driver driver);
+    void updateBookingStatusAndDriverById(@Param("id") Long id, @Param("status") BookingStatus Status, @Param("driver") Driver driver);
 
 
     @Modifying
@@ -47,5 +48,36 @@ public interface BookingRepository extends JpaRepository<Booking,Long> {
             "WHERE b.driver.id = :driverId AND DATE(b.createdAt) = CURRENT_DATE")
     Page<BookingDTO> findTodayBookingsByDriverId(@Param("driverId") Long driverId,
                                                  Pageable pageable);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Booking b SET b.startTime = CURRENT_TIMESTAMP WHERE b.id = :bookingId")
+    void setStartTimeOfBooking(@Param("bookingId") Long bookingId);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Booking b SET b.endTime = CURRENT_TIMESTAMP WHERE b.id = :bookingId")
+    void setEndTimeOfBooking(@Param("bookingId") Long bookingId);
+
+
+    //passenger Panel queries
+    @Query("""
+                SELECT new org.mrstm.uberentityservice.dto.passenger.PassengerBookingDTO(
+                    b.id,
+                    b.bookingStatus,
+                    b.createdAt,
+                    d.id,
+                    d.fullName
+                )
+                FROM Booking b
+                LEFT JOIN b.driver d
+                WHERE b.passenger.id = :passengerId
+                ORDER BY b.createdAt DESC
+            """)
+    Page<PassengerBookingDTO> findAllBookingsByPassengerId(
+            @Param("passengerId") Long passengerId,
+            Pageable pageable
+    );
+
 
 }

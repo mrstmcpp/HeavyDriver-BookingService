@@ -32,7 +32,7 @@ public class DriverBookingServicesImpl implements DriverBookingServices {
                     .currentPage(offset)
                     .totalPages(bookingPage.getTotalPages())
                     .totalItems(bookingPage.getTotalElements())
-                    .driverId(driverId)
+                    .userId(driverId)
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Error fetching all bookings for driverId: " + driverId, e);
@@ -51,7 +51,7 @@ public class DriverBookingServicesImpl implements DriverBookingServices {
                     .currentPage(offset)
                     .totalPages(bookingPage.getTotalPages())
                     .totalItems(bookingPage.getTotalElements())
-                    .driverId(driverId)
+                    .userId(driverId)
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Error fetching all bookings for driverId: " + driverId, e);

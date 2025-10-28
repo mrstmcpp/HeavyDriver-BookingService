@@ -13,6 +13,7 @@ import org.mrstm.uberbookingservice.exceptions.AccessDeniedException;
 import org.mrstm.uberbookingservice.models.Location;
 import org.mrstm.uberbookingservice.repositories.*;
 import org.mrstm.uberbookingservice.states.*;
+import org.mrstm.uberbookingservice.utils.TimeUtils;
 import org.mrstm.uberentityservice.dto.booking.*;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
@@ -217,12 +218,15 @@ public class BookingServiceImpl implements BookingService {
                 throw new BadRequestException("Invalid role: " + role);
         }
 
+        String totalTimeTaken = TimeUtils.calculateTotalTimeTaken(booking.getStartTime() , booking.getEndTime());
+
         GetBookingDetailsResponseDTO.GetBookingDetailsResponseDTOBuilder responseBuilder =
                 GetBookingDetailsResponseDTO.builder()
                         .bookingId(booking.getId())
                         .bookingStatus(booking.getBookingStatus().toString())
                         .driverId(booking.getDriver() != null ? booking.getDriver().getId() : null)
                         .driverName(booking.getDriver() != null ? booking.getDriver().getFullName() : null)
+                        .passengerName(booking.getPassenger().getPassanger_name())
                         .startTime(booking.getStartTime())
                         .pickupLocation(Location.builder()
                                 .latitude(booking.getStartLocation().getLatitude())
@@ -233,7 +237,11 @@ public class BookingServiceImpl implements BookingService {
                                 .latitude(booking.getEndLocation().getLatitude())
                                 .longitude(booking.getEndLocation().getLongitude())
                                 .address(booking.getEndLocation().getAddress())
-                                .build());
+                                .build())
+                        .startTime(booking.getStartTime())
+                        .endTime(booking.getEndTime())
+                        .totalTimeTaken(totalTimeTaken)
+                ;
 
         if ("PASSENGER".equals(role) && booking.getOtp() != null) {
             responseBuilder.otp(booking.getOtp().getCode());

@@ -18,7 +18,8 @@ public class ArrivedDriverState implements BookingState{
                     throw new OtpNotFoundException("OTP must be provided to start the ride.");
                 }
                 String otp = bookingContext.getOtpRepository().getOTPByBookingId(Long.parseLong(updateBookingRequestDto.getBookingId())).get().getCode();
-//                System.out.println(otp + " in arrived state class");
+                bookingContext.getBookingRepository().setStartTimeOfBooking(bookingId);
+                //                System.out.println(otp + " in arrived state class");
                 if(!updateBookingRequestDto.getOtp().equals(otp)){
                     throw new InvalidOtpException("Invalid otp provided.");
                 }
