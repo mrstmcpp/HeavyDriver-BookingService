@@ -6,7 +6,6 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
-import org.mrstm.uberbookingservice.apis.SocketApi;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.exceptions.AccessDeniedException;
@@ -26,7 +25,6 @@ public class BookingServiceImpl implements BookingService {
     private final PassengerRepository passengerRepository;
     private final OtpRepository otpRepository;
     private final DriverRepository driverRepository;
-    private final SocketApi socketApi;
     private final KafkaService kafkaService;
     private final RedisService redisService;
     private final IdempotencyRepository idempotencyRepository;
@@ -36,12 +34,11 @@ public class BookingServiceImpl implements BookingService {
     public BookingServiceImpl(BookingRepository bookingRepository,
                               PassengerRepository passengerRepository, OtpRepository otpRepository,
                               DriverRepository driverRepository ,
-                              SocketApi socketApi, KafkaService kafkaService, RedisService redisService, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper) {
+                               KafkaService kafkaService, RedisService redisService, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper) {
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
         this.otpRepository = otpRepository;
         this.driverRepository = driverRepository;
-        this.socketApi = socketApi;
         this.kafkaService = kafkaService;
         this.redisService = redisService;
         this.idempotencyRepository = idempotencyRepository;
