@@ -1,6 +1,7 @@
 package org.mrstm.uberbookingservice.states;
 
 import org.mrstm.uberbookingservice.dto.UpdateBookingRequestDto;
+import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.mrstm.uberentityservice.models.BookingStatus;
 
 public class CompletedState implements BookingState{
@@ -26,6 +27,7 @@ public class CompletedState implements BookingState{
         bookingContext.getDriverRepository().clearActiveBooking(Long.parseLong(updateBookingRequestDto.getDriverId()));
         System.out.println(updateBookingRequestDto.getDriverId());
         bookingContext.getRedisService().deleteDriverBookingPair(updateBookingRequestDto.getDriverId());
+        bookingContext.getKafkaService().publishStatusUpdateNotification(UpdateBookingResponseDto.builder().bookingId(bookingId).bookingStatus(BookingStatus.COMPLETED).build());
 
         return new CompletedState();
     }

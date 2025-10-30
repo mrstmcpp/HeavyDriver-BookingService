@@ -29,12 +29,12 @@ public class BookingServiceImpl implements BookingService {
     private final RedisService redisService;
     private final IdempotencyRepository idempotencyRepository;
     private final ObjectMapper objectMapper;
-
+    private final FareService fareService;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               PassengerRepository passengerRepository, OtpRepository otpRepository,
                               DriverRepository driverRepository ,
-                               KafkaService kafkaService, RedisService redisService, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper) {
+                              KafkaService kafkaService, RedisService redisService, IdempotencyRepository idempotencyRepository, ObjectMapper objectMapper, FareService fareService) {
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
         this.otpRepository = otpRepository;
@@ -43,6 +43,7 @@ public class BookingServiceImpl implements BookingService {
         this.redisService = redisService;
         this.idempotencyRepository = idempotencyRepository;
         this.objectMapper = objectMapper;
+        this.fareService = fareService;
     }
 
     @Override
@@ -59,13 +60,19 @@ public class BookingServiceImpl implements BookingService {
                 System.out.println(p.getId() + " " + p.getPassanger_name());
                 throw new IllegalArgumentException("Passenger already have active booking.");
             }
+
+
+
+
             Booking booking = Booking.builder()
                     .bookingStatus(BookingStatus.ASSIGNING_DRIVER)
                     .startLocation(bookingDetails.getStartLocation())
                     .endLocation(bookingDetails.getEndLocation())
                     .passenger(p)
                     .build();
-            System.out.println("here");
+//            System.out.println("here");
+
+
 
             Booking newBooking = bookingRepository.save(booking);
             NearbyDriversRequestDto req = NearbyDriversRequestDto.builder()
@@ -278,7 +285,7 @@ public class BookingServiceImpl implements BookingService {
         Long bookingId = driverRepository.getActiveBookingByDriver(Long.parseLong(bookingRequestDto.getDriverId()))
                 .orElseThrow(() -> new NotFoundException("No active booking found for driver " + bookingRequestDto.getDriverId()));
 
-        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService , otpRepository);
+        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService , otpRepository, kafkaService);
 //        Booking dbBooking = bookingRepository.getBookingById(bookingRequestDto.getBookingId());
         BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
 

@@ -5,6 +5,7 @@ import org.mrstm.uberbookingservice.exceptions.InvalidOtpException;
 import org.mrstm.uberbookingservice.exceptions.OtpNotFoundException;
 import org.mrstm.uberbookingservice.services.BookingService;
 import org.mrstm.uberbookingservice.services.BookingServiceImpl;
+import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.mrstm.uberentityservice.models.BookingStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -24,9 +25,12 @@ public class ArrivedDriverState implements BookingState{
                     throw new InvalidOtpException("Invalid otp provided.");
                 }
                 bookingContext.setState(new InrideState());
+                //producing notification
+                bookingContext.getKafkaService().publishStatusUpdateNotification(UpdateBookingResponseDto.builder().bookingId(bookingId).bookingStatus(BookingStatus.IN_RIDE).build());
                 break;
             case CANCELLED:
                 bookingContext.setState(new CancelledState());
+                bookingContext.getKafkaService().publishStatusUpdateNotification(UpdateBookingResponseDto.builder().bookingId(bookingId).bookingStatus(BookingStatus.CANCELLED).build());
                 break;
             default:
                 throw new IllegalStateException("Illegal transition of state at arrivedstate class");

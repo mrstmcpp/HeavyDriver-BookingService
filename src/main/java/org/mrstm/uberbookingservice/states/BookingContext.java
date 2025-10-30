@@ -9,11 +9,13 @@ import org.mrstm.uberbookingservice.repositories.DriverRepository;
 import org.mrstm.uberbookingservice.repositories.OtpRepository;
 import org.mrstm.uberbookingservice.repositories.PassengerRepository;
 import org.mrstm.uberbookingservice.services.BookingService;
+import org.mrstm.uberbookingservice.services.KafkaService;
 import org.mrstm.uberbookingservice.services.RedisService;
 import org.mrstm.uberentityservice.models.BookingStatus;
 
 @Getter
 public class BookingContext {
+
     @Setter
     private BookingState state;
     private final BookingRepository bookingRepository;
@@ -21,15 +23,16 @@ public class BookingContext {
     private final DriverRepository driverRepository;
     private final RedisService redisService;
     private final OtpRepository otpRepository;
+    private final KafkaService kafkaService;
 
 
-    public BookingContext(BookingRepository bookingRepository, PassengerRepository passengerRepository, DriverRepository driverRepository, RedisService redisService, OtpRepository otpRepository){
+    public BookingContext(BookingRepository bookingRepository, PassengerRepository passengerRepository, DriverRepository driverRepository, RedisService redisService, OtpRepository otpRepository, KafkaService kafkaService){
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
         this.driverRepository = driverRepository;
         this.redisService = redisService;
         this.otpRepository = otpRepository;
-
+        this.kafkaService = kafkaService;
         this.state = new ScheduledState();
     }
 
