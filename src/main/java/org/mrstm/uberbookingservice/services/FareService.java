@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface FareService {
-    CalculatedFareDTO calculateAndSaveFare(Long bookingId , CarType carType , double discount);
+    void calculateAndSaveFare(Long bookingId);
     CalculatedFareDTO estimateFare(EstimateFareRequestDto estimateFareRequestDto, double discount);
     String addNewFareRate(FareRateDto fareRateDto);
 }

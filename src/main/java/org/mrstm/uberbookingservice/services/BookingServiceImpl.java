@@ -14,6 +14,7 @@ import org.mrstm.uberbookingservice.repositories.*;
 import org.mrstm.uberbookingservice.states.*;
 import org.mrstm.uberbookingservice.utils.TimeUtils;
 import org.mrstm.uberentityservice.dto.booking.*;
+import org.mrstm.uberentityservice.dto.booking.CreateBookingRequestDto;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
 
@@ -61,21 +62,24 @@ public class BookingServiceImpl implements BookingService {
                 throw new IllegalArgumentException("Passenger already have active booking.");
             }
 
-
-
+            if(bookingDetails.getCarType().isEmpty()){
+                throw new IllegalArgumentException("Car type must be provided..");
+            }
 
             Booking booking = Booking.builder()
+                    .carType(CarType.valueOf(bookingDetails.getCarType()))
                     .bookingStatus(BookingStatus.ASSIGNING_DRIVER)
                     .startLocation(bookingDetails.getStartLocation())
                     .endLocation(bookingDetails.getEndLocation())
                     .passenger(p)
                     .build();
 //            System.out.println("here");
-
-
-
             Booking newBooking = bookingRepository.save(booking);
+
+
+
             NearbyDriversRequestDto req = NearbyDriversRequestDto.builder()
+                    .carType(CarType.valueOf(bookingDetails.getCarType()))
                     .dropLocation(bookingDetails.getEndLocation())
                     .pickupLocation(bookingDetails.getStartLocation())
                     .build();
@@ -83,6 +87,7 @@ public class BookingServiceImpl implements BookingService {
             //changing to kafka
             processNearbyDriverAsync(req , bookingDetails.getPassengerId() , newBooking.getId());
             CreateBookingResponseDto response = CreateBookingResponseDto.builder()
+                    .carType(bookingDetails.getCarType())
                     .bookingId(newBooking.getId())
                     .bookingStatus(newBooking.getBookingStatus().toString())
                     .driver(Optional.ofNullable(newBooking.getDriver()))
@@ -105,6 +110,7 @@ public class BookingServiceImpl implements BookingService {
 
     private void processNearbyDriverAsync(NearbyDriversRequestDto nearbyDriversRequestDto , Long passengerId , Long bookingId) {
         BookingCreatedEvent event = BookingCreatedEvent.builder()
+                .carType(nearbyDriversRequestDto.getCarType())
                 .bookingId(bookingId.toString())
                 .passengerId(passengerId.toString())
                 .pickupLocation(nearbyDriversRequestDto.getPickupLocation())
@@ -117,7 +123,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public UpdateBookingResponseDto updateBooking(UpdateBookingRequestDto bookingDetails, Long bookingId) {
+    public UpdateBookingResponseDto registerBooking(UpdateBookingRequestDto bookingDetails, Long bookingId) {
         try {
             Driver driver = driverRepository.findById(Long.parseLong(bookingDetails.getDriverId()))
                     .orElseThrow(() -> new NotFoundException("Driver not found with ID: " + bookingDetails.getDriverId()));
@@ -182,7 +188,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public GetBookingDetailsResponseDTO getBookingDetails(Long bookingId, GetBookingDetailsRequestDto requestDto) {
+    public GetBookingDetailsDTO getBookingDetails(Long bookingId, GetBookingDetailsRequestDto requestDto) {
         if (requestDto == null) {
             throw new BadRequestException("Request body cannot be null.");
         }
@@ -224,20 +230,21 @@ public class BookingServiceImpl implements BookingService {
 
         String totalTimeTaken = TimeUtils.calculateTotalTimeTaken(booking.getStartTime() , booking.getEndTime());
 
-        GetBookingDetailsResponseDTO.GetBookingDetailsResponseDTOBuilder responseBuilder =
-                GetBookingDetailsResponseDTO.builder()
+        GetBookingDetailsDTO.GetBookingDetailsDTOBuilder responseBuilder =
+                GetBookingDetailsDTO.builder()
                         .bookingId(booking.getId())
                         .bookingStatus(booking.getBookingStatus().toString())
                         .driverId(booking.getDriver() != null ? booking.getDriver().getId() : null)
                         .driverName(booking.getDriver() != null ? booking.getDriver().getFullName() : null)
                         .passengerName(booking.getPassenger().getPassanger_name())
                         .startTime(booking.getStartTime())
-                        .pickupLocation(Location.builder()
+                        .fare(booking.getFare() != null ? String.valueOf((booking.getFare().getFinalFare())) : "Not Available")
+                        .pickupLocation(ExactLocation.builder()
                                 .latitude(booking.getStartLocation().getLatitude())
                                 .longitude(booking.getStartLocation().getLongitude())
                                 .address(booking.getStartLocation().getAddress())
                                 .build())
-                        .dropoffLocation(Location.builder()
+                        .dropoffLocation(ExactLocation.builder()
                                 .latitude(booking.getEndLocation().getLatitude())
                                 .longitude(booking.getEndLocation().getLongitude())
                                 .address(booking.getEndLocation().getAddress())
@@ -285,7 +292,7 @@ public class BookingServiceImpl implements BookingService {
         Long bookingId = driverRepository.getActiveBookingByDriver(Long.parseLong(bookingRequestDto.getDriverId()))
                 .orElseThrow(() -> new NotFoundException("No active booking found for driver " + bookingRequestDto.getDriverId()));
 
-        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService , otpRepository, kafkaService);
+        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService , otpRepository, kafkaService , fareService);
 //        Booking dbBooking = bookingRepository.getBookingById(bookingRequestDto.getBookingId());
         BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
 

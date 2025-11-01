@@ -3,6 +3,7 @@ package org.mrstm.uberbookingservice.services;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import org.mrstm.uberbookingservice.apis.GoogleMapsService;
+import org.mrstm.uberbookingservice.exceptions.AlreadyExistException;
 import org.mrstm.uberbookingservice.repositories.BookingRepository;
 import org.mrstm.uberbookingservice.repositories.FareRateRepository;
 import org.mrstm.uberbookingservice.repositories.FareRepository;
@@ -33,22 +34,18 @@ public class FareServiceImpl implements FareService {
 
     @Override
     @Transactional
-    public CalculatedFareDTO calculateAndSaveFare(Long bookingId, CarType carType, double discount) {
+    public void calculateAndSaveFare(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Booking not found."));
         if (fareRepository.existsByBookingId(bookingId)) {
-            return CalculatedFareDTO.builder()
-                    .distance(booking.getFare().getDistance())
-                    .duration(booking.getFare().getDuration())
-                    .fare(booking.getFare().getFinalFare())
-                    .build();
+            throw new AlreadyExistException("Fare already calculated for this booking.");
         }
-
 
         if (booking.getBookingStatus() != BookingStatus.COMPLETED) {
             throw new BadRequestException("Cannot calculate fare until trip is completed.");
         }
 
+        CarType carType = booking.getCarType();
         ExactLocation start = booking.getStartLocation();
         ExactLocation end = booking.getEndLocation();
         if (start == null || end == null) {
@@ -63,7 +60,7 @@ public class FareServiceImpl implements FareService {
         FareRate fareRate = fareRateRepository.findByCarTypeAndActiveIsTrue(carType)
                 .orElseThrow(() -> new NotFoundException("Fare rate not found for car type: " + carType));
 
-        double finalFare = fareStrategy.calculate(fareRate, distanceKm, durationMin, surge, discount);
+        double finalFare = fareStrategy.calculate(fareRate, distanceKm, durationMin, surge, 10);
 
         Fare fare = Fare.builder()
                 .booking(booking)
@@ -72,17 +69,17 @@ public class FareServiceImpl implements FareService {
                 .duration(durationMin)
                 .finalFare(finalFare)
                 .surge(surge)
-                .discount(discount)
+                .discount(10) //discount is set to 10%
                 .build();
 
         fareRepository.save(fare);
 
 
-        return CalculatedFareDTO.builder()
-                .fare(finalFare)
-                .distance(distanceKm)
-                .duration(durationMin)
-                .build();
+//        return CalculatedFareDTO.builder()
+//                .fare(finalFare)
+//                .distance(distanceKm)
+//                .duration(durationMin)
+//                .build();
     }
 
 

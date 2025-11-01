@@ -4,6 +4,8 @@ import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.services.BookingServiceImpl;
 import org.mrstm.uberentityservice.dto.booking.ActiveBookingDTO;
+import org.mrstm.uberentityservice.dto.booking.CreateBookingRequestDto;
+import org.mrstm.uberentityservice.dto.booking.GetBookingDetailsDTO;
 import org.mrstm.uberentityservice.dto.booking.RetryBookingRequestDto;
 import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.springframework.http.HttpStatus;
@@ -34,12 +36,12 @@ public class BookingController {
 //    }
 
     @PostMapping("/{bookingId}")
-    public ResponseEntity<UpdateBookingResponseDto> updateBooking(@RequestBody UpdateBookingRequestDto requestDto , @PathVariable Long bookingId){
-        return new ResponseEntity<>(bookingService.updateBooking(requestDto , bookingId) , HttpStatus.OK);
+    public ResponseEntity<UpdateBookingResponseDto> registerBooking(@RequestBody UpdateBookingRequestDto requestDto , @PathVariable Long bookingId){
+        return new ResponseEntity<>(bookingService.registerBooking(requestDto , bookingId) , HttpStatus.OK);
     }
 
     @PostMapping("/details/{bookingId}")
-    public ResponseEntity<GetBookingDetailsResponseDTO> getBookingDetails(@PathVariable Long bookingId ,@RequestBody GetBookingDetailsRequestDto getBookingDetailsRequestDto){
+    public ResponseEntity<GetBookingDetailsDTO> getBookingDetails(@PathVariable Long bookingId , @RequestBody GetBookingDetailsRequestDto getBookingDetailsRequestDto){
         return new ResponseEntity<>(bookingService.getBookingDetails(bookingId , getBookingDetailsRequestDto) , HttpStatus.OK);
     }
 

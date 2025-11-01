@@ -57,6 +57,16 @@ public class GlobalExceptionHandler {
 //                .body(Map.of("error", "Something went wrong on the server."));
 //    }
 
+    @ExceptionHandler(AlreadyExistException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFoundException(AlreadyExistException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.CONFLICT.value());
+        response.put("error", "Not Found");
+        response.put("message", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFoundException(NotFoundException ex) {
         Map<String, Object> response = new HashMap<>();

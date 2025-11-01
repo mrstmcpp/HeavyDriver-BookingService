@@ -1,6 +1,7 @@
 package org.mrstm.uberbookingservice.dto;
 
 import lombok.*;
+import org.mrstm.uberentityservice.models.CarType;
 import org.mrstm.uberentityservice.models.ExactLocation;
 
 @Getter
@@ -9,7 +10,8 @@ import org.mrstm.uberentityservice.models.ExactLocation;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NearbyDriversRequestDto {
-    ExactLocation pickupLocation;
-    ExactLocation dropLocation;
+    private CarType carType;
+    private ExactLocation pickupLocation;
+    private ExactLocation dropLocation;
 
 }

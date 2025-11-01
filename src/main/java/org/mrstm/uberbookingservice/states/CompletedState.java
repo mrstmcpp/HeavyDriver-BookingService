@@ -21,6 +21,7 @@ public class CompletedState implements BookingState{
 
     public static CompletedState completeBooking(BookingContext bookingContext , Long bookingId, UpdateBookingRequestDto updateBookingRequestDto){
         bookingContext.getBookingRepository().updateBookingStatus(bookingId , BookingStatus.COMPLETED);
+        bookingContext.getFareService().calculateAndSaveFare(bookingId);
         bookingContext.getBookingRepository().setEndTimeOfBooking(bookingId);
         bookingContext.getPassengerRepository().clearActiveBooking(Long.parseLong(updateBookingRequestDto.getPassengerId()));
         System.out.println(updateBookingRequestDto.getPassengerId());
@@ -28,7 +29,6 @@ public class CompletedState implements BookingState{
         System.out.println(updateBookingRequestDto.getDriverId());
         bookingContext.getRedisService().deleteDriverBookingPair(updateBookingRequestDto.getDriverId());
         bookingContext.getKafkaService().publishStatusUpdateNotification(UpdateBookingResponseDto.builder().bookingId(bookingId).bookingStatus(BookingStatus.COMPLETED).build());
-
         return new CompletedState();
     }
 }

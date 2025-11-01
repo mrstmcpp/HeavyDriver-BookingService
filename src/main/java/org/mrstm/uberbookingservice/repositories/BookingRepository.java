@@ -35,19 +35,37 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     BookingStatus getBookingStatusById(@Param("id") Long id);
 
     //druver panel queries
-    @Query("SELECT new org.mrstm.uberentityservice.dto.driver.BookingDTO(b.id, b.bookingStatus, b.createdAt, b.driver.id) " +
-            "FROM Booking b " +
-            "WHERE b.driver.id = :driverId " +
-            "ORDER BY b.createdAt DESC")
-    Page<BookingDTO> findAllBookingsByDriverId(@Param("driverId") Long driverId,
-                                               Pageable pageable);
+    @Query("""
+            SELECT new org.mrstm.uberentityservice.dto.driver.BookingDTO(
+                b.id,
+                b.bookingStatus,
+                f.finalFare,
+                b.createdAt,
+                b.driver.id
+            )
+            FROM Booking b
+            LEFT JOIN b.fare f
+            WHERE b.driver.id = :driverId
+            ORDER BY b.createdAt DESC
+            """)
+    Page<BookingDTO> findAllBookingsByDriverId(@Param("driverId") Long driverId, Pageable pageable);
 
 
-    @Query("SELECT new org.mrstm.uberentityservice.dto.driver.BookingDTO(b.id, b.bookingStatus, b.createdAt, b.driver.id) " +
-            "FROM Booking b " +
-            "WHERE b.driver.id = :driverId AND DATE(b.createdAt) = CURRENT_DATE")
-    Page<BookingDTO> findTodayBookingsByDriverId(@Param("driverId") Long driverId,
-                                                 Pageable pageable);
+    @Query("""
+            SELECT new org.mrstm.uberentityservice.dto.driver.BookingDTO(
+                b.id,
+                b.bookingStatus,
+                f.finalFare,
+                b.createdAt,
+                b.driver.id
+            )
+            FROM Booking b
+            LEFT JOIN b.fare f
+            WHERE b.driver.id = :driverId AND DATE(b.createdAt) = CURRENT_DATE
+            ORDER BY b.createdAt DESC
+            """)
+    Page<BookingDTO> findTodayBookingsByDriverId(@Param("driverId") Long driverId, Pageable pageable);
+
 
     @Transactional
     @Modifying
@@ -60,19 +78,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     void setEndTimeOfBooking(@Param("bookingId") Long bookingId);
 
 
-    //passenger Panel queries
     @Query("""
-                SELECT new org.mrstm.uberentityservice.dto.passenger.PassengerBookingDTO(
-                    b.id,
-                    b.bookingStatus,
-                    b.createdAt,
-                    d.id,
-                    d.fullName
-                )
-                FROM Booking b
-                LEFT JOIN b.driver d
-                WHERE b.passenger.id = :passengerId
-                ORDER BY b.createdAt DESC
+            SELECT new org.mrstm.uberentityservice.dto.passenger.PassengerBookingDTO(
+                b.id,
+                b.bookingStatus,
+                f.finalFare,
+                b.createdAt,
+                d.id,
+                d.fullName
+            )
+            FROM Booking b
+            LEFT JOIN b.driver d
+            LEFT JOIN b.fare f
+            WHERE b.passenger.id = :passengerId
+            ORDER BY b.createdAt DESC
             """)
     Page<PassengerBookingDTO> findAllBookingsByPassengerId(
             @Param("passengerId") Long passengerId,

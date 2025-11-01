@@ -13,6 +13,7 @@ import java.util.Optional;
 public class CreateBookingResponseDto {
     private Long bookingId;
     private String bookingStatus;
+    private String carType;
     private Optional<Driver> driver;
 
 }
