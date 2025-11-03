@@ -188,38 +188,24 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public GetBookingDetailsDTO getBookingDetails(Long bookingId, GetBookingDetailsRequestDto requestDto) {
-        if (requestDto == null) {
-            throw new BadRequestException("Request body cannot be null.");
-        }
+    public GetBookingDetailsDTO getBookingDetails(Long bookingId , Long userId, String role) {
 
-        if (requestDto.getUserId() == null || requestDto.getUserId().isBlank()) {
-            throw new BadRequestException("User ID must be provided.");
-        }
-
-        if (requestDto.getRole() == null || requestDto.getRole().isBlank()) {
-            throw new BadRequestException("Role must be provided.");
-        }
-
-        Booking booking = bookingRepository.getBookingById(bookingId);
+       Booking booking = bookingRepository.getBookingById(bookingId);
         if (booking == null) {
             throw new ResourceNotFoundException("Booking not found for ID: " + bookingId);
         }
 
-        String role = requestDto.getRole().trim().toUpperCase();
-        String userId = requestDto.getUserId();
-
         switch (role) {
             case "DRIVER":
                 if (booking.getDriver() == null ||
-                        !booking.getDriver().getId().toString().equals(userId)) {
+                        !booking.getDriver().getId().equals(userId)) {
                     throw new AccessDeniedException("This booking does not belong to this driver.");
                 }
                 break;
 
             case "PASSENGER":
                 if (booking.getPassenger() == null ||
-                        !booking.getPassenger().getId().toString().equals(userId)) {
+                        !booking.getPassenger().getId().equals(userId)) {
                     throw new AccessDeniedException("This booking does not belong to this passenger.");
                 }
                 break;
@@ -288,52 +274,6 @@ public class BookingServiceImpl implements BookingService {
 
 
     @Override
-    public UpdateBookingResponseDto updateStatus(String bookingIdByPassenger, UpdatingStateDto bookingRequestDto) {
-        Long bookingId = driverRepository.getActiveBookingByDriver(Long.parseLong(bookingRequestDto.getDriverId()))
-                .orElseThrow(() -> new NotFoundException("No active booking found for driver " + bookingRequestDto.getDriverId()));
-
-        BookingContext bookingContext = new BookingContext(bookingRepository , passengerRepository, driverRepository , redisService , otpRepository, kafkaService , fareService);
-//        Booking dbBooking = bookingRepository.getBookingById(bookingRequestDto.getBookingId());
-        BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
-
-//        System.out.println("Current for : " + dbBooking.getId() + " -> " + currentStatus);
-//        System.out.println("Requested : " + bookingRequestDto.getBookingStatus());
-
-        Long passenger = passengerRepository.findPassengerByActiveBookingId(Long.parseLong(bookingIdByPassenger)).getFirst().getId();
-//        System.out.println("passenger : " + passenger);
-
-        try {
-            System.out.println(bookingRequestDto.getOtp());
-            UpdateBookingRequestDto dto = UpdateBookingRequestDto.builder()
-                    .otp(bookingRequestDto.getOtp())
-                    .passengerId(passenger.toString())
-                    .bookingStatus(bookingRequestDto.getBookingStatus())
-                    .driverId(bookingRequestDto.getDriverId())
-                    .bookingId(bookingIdByPassenger)
-                    .build();
-            bookingContext.setState(getStateObject(currentStatus)); // database state would be here
-            bookingContext.updateStatus(bookingRequestDto.getBookingStatus(), Long.parseLong(bookingIdByPassenger), dto);
-            bookingRepository.updateBookingStatus(
-                    Long.parseLong(bookingIdByPassenger),
-                    bookingRequestDto.getBookingStatus()
-            );
-
-            UpdateBookingResponseDto updateBookingResponseDto = UpdateBookingResponseDto.builder()
-                    .bookingStatus(bookingContext.getStatus())
-                    .bookingId(Long.parseLong(bookingIdByPassenger))
-                    .build();
-
-            //seding notification
-
-
-
-            return updateBookingResponseDto;
-        } catch (IllegalStateException e) {
-            throw new IllegalStateException("Transition not allowed: " + currentStatus + " -> " + bookingRequestDto.getBookingStatus());
-        }
-    }
-
-    @Override
     public String getOtpForBooking(Long bookingId) {
         return otpRepository.getOTPByBookingId(bookingId)
                 .map(OTP::getCode)
@@ -364,6 +304,60 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+
+
+    @Override
+    public UpdateBookingResponseDto updateStatus(Long userId, String role, UpdatingStateDto bookingRequestDto) {
+
+        Long bookingId;
+
+        if ("DRIVER".equalsIgnoreCase(role)) {
+            bookingId = driverRepository.getActiveBookingByDriver(userId)
+                    .orElseThrow(() -> new NotFoundException("No active booking found for driver " + userId));
+        }
+        else if ("PASSENGER".equalsIgnoreCase(role)) {
+            bookingId = passengerRepository.getActiveBookingIdByPassengerId(userId)
+                    .orElseThrow(() -> new NotFoundException("No active booking found for passenger " + userId));
+        }
+        else {
+            throw new IllegalArgumentException("Invalid role: " + role);
+        }
+
+        BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
+
+        BookingContext bookingContext = new BookingContext(
+                bookingRepository, passengerRepository, driverRepository,
+                redisService, otpRepository, kafkaService, fareService
+        );
+
+        try {
+            Long passengerId = passengerRepository.findPassengerByActiveBookingId(bookingId)
+                    .getFirst().getId();
+
+            UpdateBookingRequestDto dto = UpdateBookingRequestDto.builder()
+                    .otp(bookingRequestDto.getOtp())
+                    .passengerId(passengerId.toString())
+                    .bookingStatus(bookingRequestDto.getBookingStatus())
+                    .driverId(bookingRequestDto.getDriverId())
+                    .bookingId(bookingId.toString())
+                    .build();
+
+            bookingContext.setState(getStateObject(currentStatus));
+            bookingContext.updateStatus(bookingRequestDto.getBookingStatus(), bookingId, dto);
+
+            bookingRepository.updateBookingStatus(bookingId, bookingRequestDto.getBookingStatus());
+
+            return UpdateBookingResponseDto.builder()
+                    .bookingStatus(bookingContext.getStatus())
+                    .bookingId(bookingId)
+                    .build();
+
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Transition not allowed: " + currentStatus + " -> " + bookingRequestDto.getBookingStatus());
+        }
+    }
+
+
     public BookingState getStateObject(BookingStatus bookingStatus){
         switch (bookingStatus){
             case ASSIGNING_DRIVER: return new AssigningDriverState();
@@ -375,4 +369,5 @@ public class BookingServiceImpl implements BookingService {
             default: throw new IllegalStateException("Unknown state of booking");
         }
     }
+
 }

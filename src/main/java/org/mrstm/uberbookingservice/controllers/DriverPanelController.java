@@ -1,10 +1,15 @@
 package org.mrstm.uberbookingservice.controllers;
 
+import org.mrstm.uberbookingservice.common.CustomUserPrincipal;
+import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
+import org.mrstm.uberbookingservice.services.BookingService;
 import org.mrstm.uberbookingservice.services.DriverBookingServices;
 import org.mrstm.uberentityservice.dto.booking.StartRideWithOtp;
+import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.mrstm.uberentityservice.dto.driver.BookingsByDriverResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -17,10 +22,13 @@ public class DriverPanelController {
         this.driverBookingServices = driverBookingServices;
     }
 
+
     @GetMapping("/{driverId}/today-booking")
     public ResponseEntity<BookingsByDriverResponseDto> getTodayBookings(@RequestParam(value = "offset" , required = false, defaultValue = "0") Integer offset,
                                                                         @RequestParam(value = "pageSize" , required = false , defaultValue = "10") Integer pageSize,
-                                                                        @PathVariable String driverId){
+                                                                        @PathVariable String driverId,
+            @AuthenticationPrincipal CustomUserPrincipal user
+    ){
         try{
             return new ResponseEntity<>(driverBookingServices.fetchTodayBookingsByDriver(driverId, offset, pageSize) ,HttpStatus.OK);
         } catch (Exception e) {
@@ -31,7 +39,7 @@ public class DriverPanelController {
     @GetMapping("/{driverId}/all-booking")
     public ResponseEntity<BookingsByDriverResponseDto> getAllBookings(@RequestParam(value = "offset" , required = false, defaultValue = "0") Integer offset,
                                                                       @RequestParam(value = "pageSize" , required = false , defaultValue = "10") Integer pageSize,
-                                                                      @PathVariable String driverId
+                                                                      @PathVariable String driverId, @AuthenticationPrincipal CustomUserPrincipal user
     ){
         try{
             return new ResponseEntity<>(driverBookingServices.fetchAllBookingsByDriver((driverId) , offset ,pageSize) , HttpStatus.OK);

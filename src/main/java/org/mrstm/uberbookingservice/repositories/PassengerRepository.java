@@ -17,6 +17,9 @@ public interface PassengerRepository extends JpaRepository<Passenger, Long> {
     @Query("SELECT p.activeBooking FROM Passenger p WHERE p.id = :passengerId")
     Optional<Booking> getActiveBookingByPassengerId(@Param("passengerId") Long passengerId);
 
+    @Query("SELECT p.activeBooking.id FROM Passenger p WHERE p.id = :passengerId")
+    Optional<Long>  getActiveBookingIdByPassengerId(@Param("passengerId") Long passengerId);
+
     @Modifying
     @Transactional
     @Query("UPDATE Passenger p SET p.activeBooking = null WHERE p.id = :passengerId")

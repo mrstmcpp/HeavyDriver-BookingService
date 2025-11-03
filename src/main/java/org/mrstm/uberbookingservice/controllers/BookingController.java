@@ -1,5 +1,6 @@
 package org.mrstm.uberbookingservice.controllers;
 
+import org.mrstm.uberbookingservice.common.CustomUserPrincipal;
 import org.mrstm.uberbookingservice.dto.*;
 import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
 import org.mrstm.uberbookingservice.services.BookingServiceImpl;
@@ -10,6 +11,7 @@ import org.mrstm.uberentityservice.dto.booking.RetryBookingRequestDto;
 import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -41,8 +43,10 @@ public class BookingController {
     }
 
     @PostMapping("/details/{bookingId}")
-    public ResponseEntity<GetBookingDetailsDTO> getBookingDetails(@PathVariable Long bookingId , @RequestBody GetBookingDetailsRequestDto getBookingDetailsRequestDto){
-        return new ResponseEntity<>(bookingService.getBookingDetails(bookingId , getBookingDetailsRequestDto) , HttpStatus.OK);
+    public ResponseEntity<GetBookingDetailsDTO> getBookingDetails(@PathVariable Long bookingId , @AuthenticationPrincipal CustomUserPrincipal userPrincipal){
+        Long userId = userPrincipal.getId();
+        String role = userPrincipal.getRole();
+        return new ResponseEntity<>(bookingService.getBookingDetails(bookingId , userId , role) , HttpStatus.OK);
     }
 
     @GetMapping("/active/passenger/{passengerId}")
@@ -56,14 +60,15 @@ public class BookingController {
     }
 
 
-    @PutMapping("/{bookingId}/updateStatus")
-    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@PathVariable String bookingId , @RequestBody UpdatingStateDto updateBookingRequestDto){
-        return new ResponseEntity<>(bookingService.updateStatus(bookingId , updateBookingRequestDto) , HttpStatus.OK);
-    }
-
     @PostMapping("/{bookingId}/retry")
     public ResponseEntity<String> retryBookingRequest(@PathVariable String bookingId, @RequestBody RetryBookingRequestDto requestDto){
         return new ResponseEntity<>(bookingService.retryBookingRequest(bookingId , requestDto) , HttpStatus.OK);
+    }
+
+    @PutMapping("/updateStatus")
+    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@RequestBody UpdatingStateDto updateBookingRequestDto, @RequestHeader("X-User-Id") Long passengerId,
+                                                                        @RequestHeader("X-User-Role") String role){
+        return new ResponseEntity<>(bookingService.updateStatus(passengerId , role , updateBookingRequestDto) , HttpStatus.OK);
     }
 
 }

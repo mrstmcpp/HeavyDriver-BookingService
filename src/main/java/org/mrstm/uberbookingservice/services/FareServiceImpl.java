@@ -8,13 +8,15 @@ import org.mrstm.uberbookingservice.repositories.BookingRepository;
 import org.mrstm.uberbookingservice.repositories.FareRateRepository;
 import org.mrstm.uberbookingservice.repositories.FareRepository;
 import org.mrstm.uberbookingservice.strategy.FareStrategy;
-import org.mrstm.uberentityservice.dto.fare.CalculatedFareDTO;
-import org.mrstm.uberentityservice.dto.fare.EstimateFareRequestDto;
-import org.mrstm.uberentityservice.dto.fare.FareRateDto;
+import org.mrstm.uberentityservice.dto.fare.*;
 import org.mrstm.uberentityservice.dto.googlemaps.DistanceDuration;
 import org.mrstm.uberentityservice.models.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 
 @Service
 public class FareServiceImpl implements FareService {
@@ -122,6 +124,26 @@ public class FareServiceImpl implements FareService {
                 .build();
         fareRateRepository.save(fareRate);
         return "SUCCESS";
+    }
+
+    @Override
+    public AnalyticsResponseDto getEarningsOfDriver(Long driverId, LocalDate fromDate, LocalDate toDate) {
+        double totalEarnings = fareRepository.getTotalEarningsBetween(driverId, fromDate, toDate);
+        double thisMonthEarnings = fareRepository.getThisMonthEarnings(driverId);
+        double pendingEarnings = 0;
+        double withdrawnEarnings = totalEarnings; //baad me
+
+        return AnalyticsResponseDto.builder()
+                .totalEarnings(totalEarnings)
+                .thisMonthEarnings(thisMonthEarnings)
+                .pendingEarnings(pendingEarnings)
+                .withdrawnEarnings(withdrawnEarnings)
+                .build();
+    }
+
+    @Override
+    public List<DailyEarningsDto> getDailyEarningsBetween(Long driverId, LocalDate fromDate, LocalDate toDate) {
+        return fareRepository.getDailyEarningsBetween(driverId, fromDate, toDate);
     }
 
 

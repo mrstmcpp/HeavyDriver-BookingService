@@ -18,16 +18,17 @@ public interface BookingService {
 
     public String cancelBooking(CancelBookingRequestDto cancelBookingRequestDto); //api just for development purposes
 
-    public GetBookingDetailsDTO getBookingDetails(Long bookingId , GetBookingDetailsRequestDto getBookingDetailsRequestDto);
+    public GetBookingDetailsDTO getBookingDetails(Long bookingId ,  Long userId , String role);
 
     public ActiveBookingDTO getActiveBooking(Long passengerId);
 
     public ActiveBookingDTO getActiveBookingOfDriver(Long driverId);
 
-    public UpdateBookingResponseDto updateStatus(String bookingId, UpdatingStateDto bookingRequestDto);
-
     public String getOtpForBooking(Long bookingId);
 
     public String retryBookingRequest(String bookingId , RetryBookingRequestDto requestDto);
+
+
+    public UpdateBookingResponseDto updateStatus(Long userId, String role, UpdatingStateDto bookingRequestDto);
 
 }
