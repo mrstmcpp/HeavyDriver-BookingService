@@ -24,7 +24,7 @@ public class CompletedState implements BookingState{
         bookingContext.getFareService().calculateAndSaveFare(bookingId);
         bookingContext.getBookingRepository().setEndTimeOfBooking(bookingId);
         bookingContext.getPassengerRepository().clearActiveBooking(Long.parseLong(updateBookingRequestDto.getPassengerId()));
-        System.out.println(updateBookingRequestDto.getPassengerId());
+        System.out.println("cleared active booking of passenger : " + updateBookingRequestDto.getPassengerId());
         bookingContext.getDriverRepository().clearActiveBooking(Long.parseLong(updateBookingRequestDto.getDriverId()));
         System.out.println(updateBookingRequestDto.getDriverId());
         bookingContext.getRedisService().deleteDriverBookingPair(updateBookingRequestDto.getDriverId());

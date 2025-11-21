@@ -323,6 +323,7 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Invalid role: " + role);
         }
 
+
         BookingStatus currentStatus = bookingRepository.getBookingStatusById(bookingId);
 
         BookingContext bookingContext = new BookingContext(
@@ -333,6 +334,8 @@ public class BookingServiceImpl implements BookingService {
         try {
             Long passengerId = passengerRepository.findPassengerByActiveBookingId(bookingId)
                     .getFirst().getId();
+
+//            System.out.println("Printin passenger in try catch : " + passengerId);
 
             UpdateBookingRequestDto dto = UpdateBookingRequestDto.builder()
                     .otp(bookingRequestDto.getOtp())

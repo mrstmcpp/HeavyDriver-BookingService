@@ -48,6 +48,7 @@ public class FareServiceImpl implements FareService {
         }
 
         CarType carType = booking.getCarType();
+        System.out.println("Printing car type inside the fare service : " + carType.toString());
         ExactLocation start = booking.getStartLocation();
         ExactLocation end = booking.getEndLocation();
         if (start == null || end == null) {

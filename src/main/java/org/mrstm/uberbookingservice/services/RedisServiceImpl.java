@@ -33,6 +33,7 @@ public class RedisServiceImpl implements RedisService{
     public void deleteDriverBookingPair(String driverId) {
         try{
             redisTemplate.delete("driver_booking:" + driverId);
+            System.err.println("deleting driver-booking mapping: ");
         } catch (Exception e) {
             System.err.println("Failed to delete driver-booking mapping: " + e.getMessage());
         }

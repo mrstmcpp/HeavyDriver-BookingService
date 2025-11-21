@@ -1,24 +1,17 @@
 package org.mrstm.uberbookingservice.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.mrstm.uberbookingservice.dto.BookingStateDto.UpdatingStateDto;
-import org.mrstm.uberbookingservice.dto.UpdateBookingRequestDto;
 import org.mrstm.uberbookingservice.repositories.*;
-import org.mrstm.uberbookingservice.states.*;
 import org.mrstm.uberentityservice.dto.booking.StartRideWithOtp;
-import org.mrstm.uberentityservice.dto.booking.UpdateBookingResponseDto;
 import org.mrstm.uberentityservice.dto.driver.BookingDTO;
 import org.mrstm.uberentityservice.dto.driver.BookingsByDriverResponseDto;
-import org.mrstm.uberentityservice.models.BookingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

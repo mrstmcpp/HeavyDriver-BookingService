@@ -66,9 +66,11 @@ public class BookingController {
     }
 
     @PutMapping("/updateStatus")
-    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@RequestBody UpdatingStateDto updateBookingRequestDto, @RequestHeader("X-User-Id") Long passengerId,
+    public ResponseEntity<UpdateBookingResponseDto> updateBookingStatus(@RequestBody UpdatingStateDto updateBookingRequestDto, @RequestHeader("X-User-Id") Long userId,
                                                                         @RequestHeader("X-User-Role") String role){
-        return new ResponseEntity<>(bookingService.updateStatus(passengerId , role , updateBookingRequestDto) , HttpStatus.OK);
+        System.out.println("Driver id : " + userId);
+        updateBookingRequestDto.setDriverId(userId.toString());
+        return new ResponseEntity<>(bookingService.updateStatus(userId , role , updateBookingRequestDto) , HttpStatus.OK);
     }
 
 }
